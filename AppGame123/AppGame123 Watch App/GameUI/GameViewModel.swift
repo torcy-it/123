@@ -125,10 +125,6 @@ final class GameViewModel: ObservableObject {
 
         if checkElimination() { return }
 
-        print("────────────────────────")
-        print("STATE BEFORE PLAY → \(turnState)")
-        print("isPlayerTurn BEFORE → \(isPlayerTurn ? "PLAYER" : "CPU")")
-        
         let playedByPlayer: Bool
         switch turnState {
         case .normal(let p), .forced(let p, _):
@@ -139,9 +135,7 @@ final class GameViewModel: ObservableObject {
 
         lastPlayedByPlayer = playedByPlayer
 
-        let card = drawCard()
-
-        print("CARD DRAWN → \(card.value) by \(isPlayerTurn ? "PLAYER" : "CPU")")
+        guard let card = drawCard() else { return }
 
         displayMessage = lastPlayedByPlayer
             ? "YOU THREW \(card.value)"
@@ -154,30 +148,64 @@ final class GameViewModel: ObservableObject {
         Task { @MainActor in
             try? await Task.sleep(nanoseconds: 50_000_000)
 
-            guard case .collecting = self.turnState else {
+            if case .collecting(let collectorIsPlayer) = self.turnState {
+                if collectorIsPlayer {
+                    return
+                }
+                if !self.tablePile.isEmpty, !self.visiblePile.isEmpty {
+                    let drawnCard = self.tablePile.removeLast()
+                    self.visiblePile.removeLast()
+                    if self.lastPlayedByPlayer {
+                        self.playerDeck.insert(drawnCard, at: 0)
+                    } else {
+                        self.cpuDeck.insert(drawnCard, at: 0)
+                    }
+                }
+                return
+            }
+
+            // Pattern valido: finestra per CPU slap (300ms di reazione)
+            if self.collectionRule() != nil {
+                self.scheduleCpuSlapCheck(card: card)
+                return
+            }
+
+            self.handleCard(card)
+        }
+    }
+
+    /// CPU può slapare se rileva un pattern dopo 300ms (tempo di reazione)
+    private func scheduleCpuSlapCheck(card: Card) {
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 800_000_000)
+
+            if case .collecting = self.turnState { return }
+            if self.gameOver { return }
+            guard let msg = self.collectionRule() else {
                 self.handleCard(card)
                 return
             }
+
+            self.handleCpuCollect(message: msg)
         }
     }
 
 
-    private func drawCard() -> Card {
+    private func drawCard() -> Card? {
         if playerDeck.isEmpty {
             endGame(winner: "CPU")
-            fatalError("Player deck empty")
+            return nil
         }
         if cpuDeck.isEmpty {
             endGame(winner: "Player")
-            fatalError("CPU deck empty")
+            return nil
         }
 
-        // Semplice: playerTurn indica sempre chi gioca
         switch turnState {
         case .normal(let playerTurn), .forced(let playerTurn, _):
             return playerTurn ? playerDeck.removeFirst() : cpuDeck.removeFirst()
         default:
-            fatalError("drawCard called in invalid state: \(turnState)")
+            return nil
         }
     }
 
@@ -186,35 +214,14 @@ final class GameViewModel: ObservableObject {
 
         case .normal(let playerTurn):
 
-            print("HANDLE NORMAL")
-            print("playerTurn = \(playerTurn ? "PLAYER" : "CPU")")
-            print("card = \(card.value)")
-
             if card.value <= 3 {
-
-                print("SPECIAL CARD \(card.value)")
-                print("→ Opponent must play \(card.value) cards")
-                
                 lastForcingCard = card
-
                 turnState = .forced(
                     playerTurn: !playerTurn,
                     flipsRemaining: card.value
                 )
-
-    
-                print("NEW STATE → \(turnState)")
-                print("isPlayerTurn AFTER → \(isPlayerTurn ? "PLAYER" : "CPU")")
-
             } else {
-
-                print("NORMAL CARD → switch turn")
-
                 turnState = .normal(playerTurn: !playerTurn)
-
-
-                print("NEW STATE → \(turnState)")
-                print("isPlayerTurn AFTER → \(isPlayerTurn ? "PLAYER" : "CPU")")
             }
 
 
@@ -222,78 +229,42 @@ final class GameViewModel: ObservableObject {
 
             let collector = !playerTurn
 
-            print("HANDLE FORCED")
-            print("playerTurn (must play) = \(playerTurn ? "PLAYER" : "CPU")")
-            print("flipsRemaining = \(flipsRemaining)")
-            print("collector = \(collector ? "PLAYER" : "CPU")")
-            print("card = \(card.value)")
-
             if card.value <= 3 {
-
-                print("NEW SPECIAL DURING FORCED")
-                print("→ Reset obligation to \(card.value)")
-                print("→ Opponent must respond")
-                
                 lastForcingCard = card
-
                 turnState = .forced(
                     playerTurn: !playerTurn,
                     flipsRemaining: card.value
                 )
-
-
-                print("NEW STATE → \(turnState)")
-                print("isPlayerTurn AFTER → \(isPlayerTurn ? "PLAYER" : "CPU")")
-
             } else {
 
                 let newRemaining = flipsRemaining - 1
 
-                print("NORMAL RESPONSE CARD")
-                print("Remaining BEFORE = \(flipsRemaining)")
-                print("Remaining AFTER = \(newRemaining)")
-
                 if newRemaining <= 0 {
 
-                    print("OBLIGATION FAILED")
-                    print("→ \(collector ? "PLAYER" : "CPU") WILL COLLECT")
-
                     turnState = .collecting(collectorIsPlayer: collector)
-                    
-                    // Usa solo lo starburst invece della notifica verde
-                    notificationMessage = collector
-                        ? "YOU BEAT CPU WITH A SPECIAL CARD!"
-                        : "CPU BEAT YOU WITH A SPECIAL CARD!"
-                    
                     lastForcingCard = nil
 
-                    print("STATE → COLLECTING")
-
                     Task { @MainActor in
-                        try? await Task.sleep(nanoseconds: 1_200_000_000)
+                        try? await Task.sleep(nanoseconds: 600_000_000)  // attesa prima del banner
+                        self.notificationMessage = collector
+                            ? "YOU TAKE THE CARDS"
+                            : "CPU TAKES THE CARDS"
 
-                        print("COLLECT CENTER PILE")
+                        try? await Task.sleep(nanoseconds: 1_200_000_000)  // banner visibile
+
                         self.collectCenter(byPlayer: collector)
-                        self.notificationMessage = nil  // Nascondi lo starburst
+                        self.notificationMessage = nil
 
+                        try? await Task.sleep(nanoseconds: 600_000_000)  // attesa dopo aver preso le carte
                         self.turnState = .normal(playerTurn: collector)
-                  
-
-                        print("STATE AFTER COLLECT → \(self.turnState)")
-                        print("isPlayerTurn AFTER COLLECT → \(self.isPlayerTurn ? "PLAYER" : "CPU")")
                     }
 
                 } else {
-
-                    print("MUST CONTINUE PLAYING")
-                    print("Still \(newRemaining) cards to play")
 
                     turnState = .forced(
                         playerTurn: playerTurn,
                         flipsRemaining: newRemaining
                     )
-
-                    print("STATE CONTINUES → \(turnState)")
                 }
             }
 
@@ -323,6 +294,15 @@ final class GameViewModel: ObservableObject {
     }
 
     // MARK: - Tap / Slap Rules
+    private func tapRuleDisplay(_ rule: String) -> String {
+        switch rule {
+        case "THE TEN!": return "A TEN"
+        case "THE TWIN!": return "A TWIN"
+        case "THE SANDWICH!": return "A SANDWICH"
+        default: return rule
+        }
+    }
+
     private func collectionRule() -> String? {
         guard tablePile.count >= 2 else { return nil }
 
@@ -359,21 +339,30 @@ final class GameViewModel: ObservableObject {
     }
 
     private func handlePlayerCollect(message: String) {
-        // Ferma temporaneamente l'auto-play per dare feedback visivo
         autoPlayTask?.cancel()
-        
-        // Usa solo lo starburst
-        notificationMessage = message
-
+        notificationMessage = "YOU CAUGHT\n\(tapRuleDisplay(message))"
         turnState = .collecting(collectorIsPlayer: true)
-
         collectCenter(byPlayer: true)
 
         Task { [weak self] in
             try? await Task.sleep(nanoseconds: 2_000_000_000)
-            self?.notificationMessage = nil  // Nascondi lo starburst
+            self?.notificationMessage = nil
             self?.turnState = .normal(playerTurn: true)
-            self?.startAutoPlay()  // Riavvia l'auto-play
+            self?.startAutoPlay()
+        }
+    }
+
+    private func handleCpuCollect(message: String) {
+        autoPlayTask?.cancel()
+        notificationMessage = "CPU CAUGHT\n\(tapRuleDisplay(message))"
+        turnState = .collecting(collectorIsPlayer: false)
+        collectCenter(byPlayer: false)
+
+        Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            self?.notificationMessage = nil
+            self?.turnState = .normal(playerTurn: false)
+            self?.startAutoPlay()
         }
     }
 
@@ -401,8 +390,6 @@ final class GameViewModel: ObservableObject {
             if !self.playerDeck.isEmpty {
                 let penaltyCard = self.playerDeck.removeFirst()
                 self.cpuDeck.append(penaltyCard)
-                
-                print("PENALTY: Player gives card (\(penaltyCard.value)) to CPU")
             }
             
             // Nascondi il messaggio

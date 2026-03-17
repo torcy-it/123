@@ -9,9 +9,10 @@ import SwiftUI
 
 struct SettingsView: View {
     let onBack: () -> Void
+    @Environment(\.watchLayoutMetrics) private var metrics
+
     var body: some View {
         ZStack {
-            
             BackgroundTexture()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .ignoresSafeArea()
@@ -24,14 +25,14 @@ struct SettingsView: View {
                     action: {
                         onBack()
                     },
-                    width: 120,
+                    width: metrics.scaled(120),
                     primaryColor: .gray,
                     secondaryColor: .black,
                     highlightedColor: .white,
                     textColor: .white
                 )
             }
-            .padding(.bottom, 20)
+            .padding(.bottom, metrics.scaled(20))
         }
     }
 }

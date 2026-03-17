@@ -11,7 +11,10 @@ import SwiftUI
 struct AppGame123_Watch_AppApp: App {
     var body: some Scene {
         WindowGroup {
-            RootView()
+            GeometryReader { geo in
+                RootView()
+                    .environment(\.watchLayoutMetrics, WatchLayoutMetrics.from(proxy: geo))
+            }
         }
     }
 }

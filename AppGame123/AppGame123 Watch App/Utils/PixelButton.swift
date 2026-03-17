@@ -16,11 +16,10 @@ struct PixelButton: View {
     var secondaryColor: Color
     var highlightedColor: Color
     var textColor: Color
-    
+    @Environment(\.watchLayoutMetrics) private var metrics
 
     var body: some View {
-        
-        let viewHeight : CGFloat = height ?? 45
+        let viewHeight: CGFloat = height ?? metrics.scaled(45)
         
         Button(action: action) {
             ZStack {
@@ -29,11 +28,11 @@ struct PixelButton: View {
                 //.fill(Color(red: 134/255, green: 0/255, blue: 126/255))
                     .fill(secondaryColor)
                     .frame(height: viewHeight)
-                    .offset(y:8)
+                    .offset(y: metrics.scaled(8))
                     .overlay(
                         // Bordo nero pixel
                         RoundedRectangle(cornerRadius: 6)
-                            .offset(y: 8)
+                            .offset(y: metrics.scaled(8))
                             .stroke(Color.black, lineWidth: 2)
                     )
                 
@@ -52,11 +51,10 @@ struct PixelButton: View {
                         // Highlight superiore
                         VStack {
                             RoundedRectangle(cornerRadius: 3)
-                            //.fill(Color(red: 250/255, green: 115/255, blue: 251/255)) // FA73FB
                                 .fill(highlightedColor)
-                                .frame(height: 3)
-                                .padding(.horizontal, 6)
-                                .padding(.top, 4)
+                                .frame(height: metrics.scaled(3))
+                                .padding(.horizontal, metrics.scaled(6))
+                                .padding(.top, metrics.scaled(4))
                             
                             Spacer()
                         }
@@ -66,20 +64,20 @@ struct PixelButton: View {
                 
                 if(text != nil) {
                     Text(text!)
-                        .font(.custom("PressStart2P-Regular", size: 14))
+                        .font(.custom("PressStart2P-Regular", size: metrics.scaled(14)))
                         .foregroundColor(textColor)
-                        .padding(.horizontal, 8)
-                        .frame(height: 58)
+                        .padding(.horizontal, metrics.scaled(8))
+                        .frame(height: viewHeight)
                         .frame(width: width)
-                        .padding(.top, 4)
+                        .padding(.top, metrics.scaled(4))
                 }else{
             
                     Image(icon!)
                         .resizable()
                         .interpolation(.none)
                         .scaledToFit()
-                        .frame(width: 30, height: 30)
-                        .padding(.top, 8)
+                        .frame(width: metrics.scaled(30), height: metrics.scaled(30))
+                        .padding(.top, metrics.scaled(8))
                 }
             }
 

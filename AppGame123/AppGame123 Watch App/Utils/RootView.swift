@@ -26,48 +26,54 @@ struct RootView: View {
 
     var body: some View {
         ZStack {
-
             switch screen {
-
             case .menu:
                 ContentView(onNavigate: navigate)
-                    .transition(.retroSlide(from: .leading))
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .leading).combined(with: .opacity),
+                        removal: .move(edge: .leading).combined(with: .opacity)
+                    ))
 
             case .game:
                 GameView(
-                    onBack: {
-                        withAnimation(.retro) {
-                            screen = .menu
-                        }
-                    }
+                    onBack: { navigateBack() }
                 )
-                .transition(.retroSlide(from: .trailing))
+                .transition(.asymmetric(
+                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                    removal: .move(edge: .trailing).combined(with: .opacity)
+                ))
 
             case .tutorial:
                 TutorialView(
                     tutorialVM: TutorialViewModel(),
-                    onFinish: {
-                        withAnimation(.retro) {
-                            screen = .menu
-                        }
-                    }
-                ).transition(.retroFade)
+                    onFinish: { navigateBack() }
+                )
+                .transition(.asymmetric(
+                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                    removal: .move(edge: .trailing).combined(with: .opacity)
+                ))
 
             case .settings:
                 SettingsView(
-                    onBack: {
-                        withAnimation(.retro) {
-                            screen = .menu
-                        }
-                    }
+                    onBack: { navigateBack() }
                 )
-                .transition(.retroZoom)
+                .transition(.asymmetric(
+                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                    removal: .move(edge: .trailing).combined(with: .opacity)
+                ))
             }
+        }
+        .animation(.easeInOut(duration: 0.3), value: screen)
+    }
+
+    private func navigateBack() {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            screen = .menu
         }
     }
 
     private func navigate(_ route: AppRoute) {
-        withAnimation(.retro) {
+        withAnimation(.easeInOut(duration: 0.3)) {
             screen = map(route)
         }
     }

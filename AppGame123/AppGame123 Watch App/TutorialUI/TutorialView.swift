@@ -8,9 +8,9 @@
 import SwiftUI
 
 struct TutorialView: View {
-
     @StateObject var tutorialVM: TutorialViewModel
     let onFinish: () -> Void
+    @Environment(\.watchLayoutMetrics) private var metrics
 
     var body: some View {
         ZStack {
@@ -47,62 +47,62 @@ extension TutorialView {
 
         VStack(spacing: 0) {
 
-            VStack(spacing: 2) {
+            VStack(spacing: metrics.scaled(2)) {
                 Text("CARDS")
-                    .font(.custom("PressStart2P-Regular", size: 10))
+                    .font(.custom("PressStart2P-Regular", size: metrics.scaled(10)))
                     .foregroundColor(.white.opacity(0.7))
             }
-            .padding(.top, 15)
+            .padding(.top, metrics.scaled(15))
 
-            HStack(spacing: 12) {
+            HStack(spacing: metrics.scaled(12)) {
 
-                VStack(spacing: 2) {
+                VStack(spacing: metrics.scaled(2)) {
                     Text("YOU")
-                        .font(.custom("PressStart2P-Regular", size: 10))
+                        .font(.custom("PressStart2P-Regular", size: metrics.scaled(10)))
                         .foregroundColor(.white.opacity(0.7))
                     Text("12")
-                        .font(.custom("PressStart2P-Regular", size: 18))
+                        .font(.custom("PressStart2P-Regular", size: metrics.scaled(18)))
                         .foregroundColor(.white)
                 }
 
-                VStack(spacing: 2) {
+                VStack(spacing: metrics.scaled(2)) {
                     Text("CPU")
-                        .font(.custom("PressStart2P-Regular", size: 10))
+                        .font(.custom("PressStart2P-Regular", size: metrics.scaled(10)))
                         .foregroundColor(.white.opacity(0.7))
                     Text("28")
-                        .font(.custom("PressStart2P-Regular", size: 18))
+                        .font(.custom("PressStart2P-Regular", size: metrics.scaled(18)))
                         .foregroundColor(.white)
                 }
             }
-            .padding(.horizontal, 10)
-            .padding(.top, 5)
+            .padding(.horizontal, metrics.scaled(10))
+            .padding(.top, metrics.scaled(5))
 
             Spacer()
             Spacer()
 
             Text("YOUR TURN")
-                .font(.custom("PressStart2P-Regular", size: 12))
+                .font(.custom("PressStart2P-Regular", size: metrics.scaled(12)))
                 .foregroundColor(Color(red: 218/255, green: 0/255, blue: 206/255))
-                .padding(.bottom, -20)
+                .padding(.bottom, metrics.scaled(-20))
         }
     }
 }
 
 
 struct TutorialOverlay: View {
-
     let step: TutorialViewModel.Step
     let showButton: Bool
     let onGotIt: () -> Void
+    @Environment(\.watchLayoutMetrics) private var metrics
 
     var body: some View {
         VStack {
             Spacer()
 
-            VStack(spacing: 10) {
+            VStack(spacing: metrics.scaled(10)) {
 
                 Text(message)
-                    .font(.custom("PressStart2P-Regular", size: 9))
+                    .font(.custom("PressStart2P-Regular", size: metrics.scaled(9)))
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
 
@@ -110,8 +110,8 @@ struct TutorialOverlay: View {
                     PixelButton(
                         text: "GOT IT",
                         action: onGotIt,
-                        width: 140,
-                        height: 36,
+                        width: metrics.scaled(140),
+                        height: metrics.scaled(36),
                         primaryColor: Color(red: 0/255, green: 255/255, blue: 120/255),
                         secondaryColor: Color(red: 0/255, green: 140/255, blue: 70/255),
                         highlightedColor: Color(red: 180/255, green: 255/255, blue: 210/255),
@@ -119,7 +119,7 @@ struct TutorialOverlay: View {
                     )
                 }
             }
-            .padding(12)
+            .padding(metrics.scaled(12))
             .background(
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color.black.opacity(0.85))
@@ -128,7 +128,7 @@ struct TutorialOverlay: View {
                             .stroke(Color.white, lineWidth: 2)
                     )
             )
-            .padding(.bottom, 20)
+            .padding(.bottom, metrics.scaled(20))
         }
     }
 

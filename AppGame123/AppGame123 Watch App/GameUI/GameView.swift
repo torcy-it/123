@@ -9,13 +9,26 @@ import SwiftUI
 struct GameView: View {
     let onBack: () -> Void
     @StateObject private var viewModel = GameViewModel()
+    @Environment(\.watchLayoutMetrics) private var metrics
     
     
     private var isPlayerTurn: Bool {
         switch viewModel.turnState {
         case .normal(let playerTurn):
             return playerTurn
-        case .forced(let playerTurn, _):  // ← CORRETTO: ora usa playerTurn invece di flipperIsPlayer
+        case .forced(let playerTurn, _):
+            return playerTurn
+        default:
+            return false
+        }
+    }
+
+    /// Chi inizia quando la pila è vuota (dopo aver preso le carte)
+    private var whoStartsWhenPileEmpty: Bool {
+        switch viewModel.turnState {
+        case .collecting(let collectorIsPlayer):
+            return collectorIsPlayer  // chi ha preso le carte inizia
+        case .normal(let playerTurn), .forced(let playerTurn, _):
             return playerTurn
         default:
             return false
@@ -50,51 +63,80 @@ struct GameView: View {
     
     var body: some View {
         ZStack {
-            // Background
+            // Background - dietro a tutto
             BackgroundTexture()
                 .ignoresSafeArea()
-            
-            Spacer()
-            Spacer()
+                .zIndex(0)
             
             VStack(spacing: 0) {
                 
-                VStack(spacing: 2) {
+                ZStack(alignment: .center) {
+                    HStack(alignment: .center, spacing: 0) {
+                        Button(action: {
+                            if !viewModel.gameOver {
+                                viewModel.pause()
+                            }
+                        }) {
+                            Image(systemName: "pause.fill")
+                                .font(.system(size: metrics.scaled(12)))
+                                .foregroundColor(.black)
+                                .frame(width: metrics.scaled(28), height: metrics.scaled(28))
+                                .background(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .fill(Color(red: 209/255, green: 211/255, blue: 38/255))
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .stroke(Color.black, lineWidth: 2)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .fixedSize()
+                        Spacer(minLength: 0)
+                    }
+                    
                     Text("CARDS")
-                        .font(.custom("PressStart2P-Regular", size: 10))
+                        .font(.custom("PressStart2P-Regular", size: metrics.scaled(16)))
                         .foregroundColor(.white.opacity(0.7))
-                }.padding(.top, 15)
-                                    
-                // Info giocatori
-                HStack(spacing: 12) {
-                    
-                    VStack(spacing: 2) {
-                        Text("YOU")
-                            .font(.custom("PressStart2P-Regular", size: 10))
-                            .foregroundColor(.white.opacity(0.7))
-                        Text("\(viewModel.playerDeck.count)")
-                            .font(.custom("PressStart2P-Regular", size: 18))
-                            .foregroundColor(.white)
-                    }
-                    
-                    VStack(spacing: 2) {
-                        Text("CPU")
-                            .font(.custom("PressStart2P-Regular", size: 10))
-                            .foregroundColor(.white.opacity(0.7))
-                        Text("\(viewModel.cpuDeck.count)")
-                            .font(.custom("PressStart2P-Regular", size: 18))
-                            .foregroundColor(.white)
-                    }
                 }
-                .padding(.horizontal, 10)
-                .padding(.top, 5)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, metrics.scaled(10))
+                .padding(.vertical, metrics.scaled(4))
+                .padding(.top, metrics.scaled(16))
                 
-                Spacer()
-                Spacer()
+                                    
+                // Info giocatori + bottone tutorial
+                HStack(alignment: .center, spacing: metrics.scaled(8)) {
+                    HStack(spacing: metrics.scaled(12)) {
+                        VStack(spacing: metrics.scaled(2)) {
+                            Text("YOU")
+                                .font(.custom("PressStart2P-Regular", size: metrics.scaled(10)))
+                                .foregroundColor(.white.opacity(0.7))
+                            Text("\(viewModel.playerDeck.count)")
+                                .font(.custom("PressStart2P-Regular", size: metrics.scaled(18)))
+                                .foregroundColor(.white)
+                        }
+                        
+                        VStack(spacing: metrics.scaled(2)) {
+                            Text("CPU")
+                                .font(.custom("PressStart2P-Regular", size: metrics.scaled(10)))
+                                .foregroundColor(.white.opacity(0.7))
+                            Text("\(viewModel.cpuDeck.count)")
+                                .font(.custom("PressStart2P-Regular", size: metrics.scaled(18)))
+                                .foregroundColor(.white)
+                        }
+                    }
+                    
+                    
+                }
+                .padding(.horizontal, metrics.scaled(10))
+                .padding(.top, metrics.scaled(12))
+                
+                Spacer().frame(height: metrics.scaled(12))
                 
                 // Indicatore turno - SOPRA LE CARTE
                 Text(viewModel.displayMessage)
-                    .font(.custom("PressStart2P-Regular", size: 12))
+                    .font(.custom("PressStart2P-Regular", size: metrics.scaled(12)))
                     .foregroundColor(
                         viewModel.displayColor == "green"
                             ? Color(red: 0/255, green: 255/255, blue: 100/255)
@@ -102,10 +144,9 @@ struct GameView: View {
                             ? Color(red: 218/255, green: 0/255, blue: 206/255)
                             : Color(red: 255/255, green: 200/255, blue: 0/255)
                     )
-                    .padding(.bottom, -20)
                 
                 // Centro del tavolo - Carte a ventaglio
-                ZStack {
+                ZStack(alignment: .top) {
                     if !viewModel.visiblePile.isEmpty {
 
         
@@ -119,89 +160,59 @@ struct GameView: View {
                             CardView(
                                 card: entry.card,
                                 isPlayerCard: entry.isPlayer,
-                                isLastPlayed: isLast
+                                isLastPlayed: isLast,
+                                scale: metrics.scale
                             )
                             .scaleEffect(0.60)
                             .rotationEffect(.degrees(rotationForSlot(slot)))
                             .offset(
-                                x: offsetXForSlot(slot),
-                                y: offsetYForSlot(slot)
+                                x: offsetXForSlot(slot) * metrics.scale,
+                                y: offsetYForSlot(slot) * metrics.scale
                             )
                             .zIndex(Double(i))
                         }
 
                     } else {
-                        
-                        // TAP TO START solo se è il turno del giocatore
-                        VStack(spacing: 15) {
-                            if isPlayerTurn {
-                                Text("TAP TO START")
-                                    .font(.custom("PressStart2P-Regular", size: 12))
-                                    .foregroundColor(.white.opacity(0.5))
-                            }
+                        // Pila vuota: chi inizia (chi ha preso le carte o il turno corrente)
+                        VStack(spacing: metrics.scaled(15)) {
+                            Text(whoStartsWhenPileEmpty ? "YOU START" : "CPU START")
+                                .font(.custom("PressStart2P-Regular", size: metrics.scaled(12)))
+                                .foregroundColor(.white.opacity(0.5))
                         }
-                        .frame(height: 200)
+                        .frame(height: metrics.scaled(100))
                     }
                 }
                 .frame(maxHeight: .infinity)
+                .padding(.top, metrics.scaled(-12))
+                .contentShape(Rectangle())
                 .onTapGesture {
                     if !isPaused {
                         viewModel.playerTap()
                     }
                 }
-                
-                Spacer()
+                .padding(.bottom, metrics.scaled(8))
             
             }
-            
-            .onTapGesture(count: 2) {
-                if !viewModel.gameOver {
-                    viewModel.pause()
-                }
-            }
-            
-            if let message = viewModel.notificationMessage {
-                VStack {
-                    
-                    Spacer()
-
-                    ZStack {
-                        Image("ImgStarbust")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 220)
-
-                        Text(message)
-                            .font(.custom("PressStart2P-Regular", size: 12))
-                            .foregroundColor(.black)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 24)
-                    }
-                    .offset(y: 20)
-
-                    Spacer()
-                    
-                }
-                .transition(.opacity)
-                
-            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .padding(.horizontal, metrics.scaled(4))
+            .padding(.top, metrics.scaled(4))
+            .ignoresSafeArea(edges: .top)
+            .zIndex(1)
 
             
             // FINESTRA PAUSA
             if isPaused && !viewModel.gameOver {
-
-                Color.black.opacity(0.001)
-                    .ignoresSafeArea()
-                
                 ZStack {
-                    VStack(spacing: 8) {
-                        Spacer().frame(height: 2)
+                    Color.black.opacity(0.55)
+                        .ignoresSafeArea()
+                    VStack(spacing: metrics.scaled(8)) {
+                        Spacer().frame(height: metrics.scaled(2))
                         
                         Text("PAUSED")
-                            .font(.custom("PressStart2P-Regular", size: 15))
+                            .font(.custom("PressStart2P-Regular", size: metrics.scaled(15)))
                             .foregroundColor(.white)
                         
-                        Spacer().frame(height: 4)
+                        Spacer().frame(height: metrics.scaled(4))
                         
                         
                         PixelButton(
@@ -209,30 +220,34 @@ struct GameView: View {
                             action: {
                                 viewModel.resume()
                             },
-                            width: 170,
-                            height: 40,
+                            width: metrics.scaled(170),
+                            height: metrics.scaled(40),
                             primaryColor: Color(red: 0/255, green: 255/255, blue: 120/255),
                             secondaryColor: Color(red: 0/255, green: 140/255, blue: 70/255),
                             highlightedColor: Color(red: 180/255, green: 255/255, blue: 210/255),
                             textColor: Color.black
                         )
                         
+                        Spacer().frame(height: metrics.scaled(4))
+                        
                         PixelButton(
                             text: "MAIN MENU",
                             action: {
                                 onBack()
                             },
-                            width: 170,
-                            height: 40,
+                            width: metrics.scaled(170),
+                            height: metrics.scaled(40),
                             primaryColor: Color(red: 218/255, green: 0/255, blue: 206/255),
                             secondaryColor: Color(red: 134/255, green: 0/255, blue: 126/255),
                             highlightedColor: Color(red: 250/255, green: 115/255, blue: 251/255),
                             textColor: Color.white
                         )
+                        
+                        Spacer().frame(height: metrics.scaled(4))
 
                 
                     }
-                    .padding(8)
+                    .padding(metrics.scaled(8))
                     .background(
                         RoundedRectangle(cornerRadius: 10)
                             .fill(Color.black.opacity(0.9))
@@ -241,26 +256,28 @@ struct GameView: View {
                                     .stroke(Color.white, lineWidth: 2)
                             )
                     )
-                    .padding(6)
+                    .padding(metrics.scaled(6))
                     
-                }.offset(y: -10)
+                }.offset(y: metrics.scaled(-35))
+                .zIndex(3)
             }
             
             // Game Over
             if viewModel.gameOver {
                 ZStack {
-                    
-                    VStack(spacing: 8) {
-                        Spacer().frame(height: 2)
+                    Color.black.opacity(0.55)
+                        .ignoresSafeArea()
+                    VStack(spacing: metrics.scaled(8)) {
+                        Spacer().frame(height: metrics.scaled(2))
                         
                         Text("GAME OVER")
-                            .font(.custom("PressStart2P-Regular", size: 15))
+                            .font(.custom("PressStart2P-Regular", size: metrics.scaled(15)))
                             .foregroundColor(.white)
                         
-                        Spacer().frame(height: 4)
+                        Spacer().frame(height: metrics.scaled(4))
                         
                         Text("\(viewModel.winner.uppercased() == "PLAYER" ? "YOU" : "THE HOUSE") WINS!")
-                            .font(.custom("PressStart2P-Regular", size: 8))
+                            .font(.custom("PressStart2P-Regular", size: metrics.scaled(8)))
                             .foregroundColor(Color(red: 0/255, green: 255/255, blue: 100/255))
                             .multilineTextAlignment(.center)
                         
@@ -269,15 +286,17 @@ struct GameView: View {
                             action: {
                                 onBack()
                             },
-                            width: 180,
-                            height: 40,
+                            width: metrics.scaled(180),
+                            height: metrics.scaled(40),
                             primaryColor: Color(red: 218/255, green: 0/255, blue: 206/255),
                             secondaryColor: Color(red: 134/255, green: 0/255, blue: 126/255),
                             highlightedColor: Color(red: 250/255, green: 115/255, blue: 251/255),
                             textColor: Color.white
                         )
+                        
+                        Spacer().frame(height: metrics.scaled(4))
                     }
-                    .padding(8)
+                    .padding(metrics.scaled(8))
                     .background(
                         RoundedRectangle(cornerRadius: 10)
                             .fill(Color.black.opacity(0.9))
@@ -286,18 +305,33 @@ struct GameView: View {
                                     .stroke(Color.white, lineWidth: 2)
                             )
                     )
-                    .padding(6)
+                    .padding(metrics.scaled(6))
                 }
+                .offset(y: metrics.scaled(-35))
+                .zIndex(3)
             }
-
+        }
+        .overlay {
+            if let message = viewModel.notificationMessage {
+                ZStack {
+                    Color.black.opacity(0.55)
+                    NotificationBannerView(message: message, scale: metrics.scale)
+                        .offset(y: starburstOffsetY(for: message))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+                .transition(.opacity)
+            }
         }
     }
     
 
-    
-    private func scaleForSlot(_ slot: Int) -> CGFloat {
-        return 0.60
-        
+    private func starburstOffsetY(for message: String) -> CGFloat {
+        if message.contains("CAUGHT") { return metrics.scaled(40) }   // tap: A TEN, A TWIN, A SANDWICH
+        if message.contains("PENALTY") { return metrics.scaled(-5) }   // penalty
+        if message.contains("TAKE") { return metrics.scaled(-5) }     // YOU/CPU TAKE THE CARDS
+        return metrics.scaled(0)
     }
 
     private func rotationForSlot(_ slot: Int) -> Double {
@@ -320,45 +354,8 @@ struct GameView: View {
 
     private func offsetYForSlot(_ slot: Int) -> CGFloat {
         switch slot {
-        case 1: return 0
-        default: return 20
-        }
-    }
-
-    
-    // Rotazione per effetto ventaglio
-    private func rotationForCard(_ index: Int) -> Double {
-        switch index {
-        case 0: return -25  // Carta sinistra inclinata a sinistra
-        case 1: return 0    // Carta centrale dritta
-        case 2: return 25   // Carta destra inclinata a destra
-        default: return 0
-        }
-    }
-    
-    private func scaleForCard(_ index: Int) -> CGFloat {
-        
-            return 0.60
-        
-    }
-    
-    // Offset X per spaziare le carte
-    private func offsetXForCard(_ index: Int) -> CGFloat {
-        switch index {
-        case 0: return -60  // Carta sinistra
-        case 1: return 0    // Carta centrale
-        case 2: return 60   // Carta destra
-        default: return 0
-        }
-    }
-    
-    // Offset Y per dare profondità
-    private func offsetYForCard(_ index: Int) -> CGFloat {
-        switch index {
-        case 0: return 20   // Carta sinistra leggermente più in basso
-        case 1: return 0    // Carta centrale
-        case 2: return 20   // Carta destra leggermente più in basso
-        default: return 0
+        case 1: return -8
+        default: return 8
         }
     }
 }
@@ -368,11 +365,11 @@ struct CardView: View {
     let card: Card
     let isPlayerCard: Bool
     let isLastPlayed: Bool
+    var scale: CGFloat = 1.0
 
-    
-    private let cardWidth: CGFloat = 140
-    private let cardHeight: CGFloat = 200
-    private let inset: CGFloat = 14   // distanza sicura dai bordi
+    private var cardWidth: CGFloat { 140 * scale }
+    private var cardHeight: CGFloat { 200 * scale }
+    private var inset: CGFloat { 14 * scale }
 
     var body: some View {
         ZStack {
@@ -380,7 +377,7 @@ struct CardView: View {
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color.black)
                 .frame(width: cardWidth, height: cardHeight)
-                .offset(x: 4, y: 6)
+                .offset(x: 4 * scale, y: 6 * scale)
 
             // Carta
             RoundedRectangle(cornerRadius: 12)
@@ -404,11 +401,11 @@ struct CardView: View {
                 .frame(width: cardWidth, height: cardHeight)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.black, lineWidth: 4)
+                        .stroke(Color.black, lineWidth: max(2, 4 * scale))
                 )
 
             // Numero centrale
-            PixelNumber(value: card.value, size: 64)
+            PixelNumber(value: card.value, size: 64 * scale)
         }
         // Angoli — overlay separati e sicuri
         .overlay(alignment: .topLeading) {
@@ -430,7 +427,7 @@ struct CardView: View {
     }
 
     private var cornerNumber: some View {
-        PixelNumber(value: card.value, size: 18)
+        PixelNumber(value: card.value, size: 18 * scale)
     }
 }
 
@@ -446,12 +443,70 @@ struct PixelNumber: View {
     }
 }
 
-struct StarburstShape: Shape {
-    let points: Int = 16
-    let innerRadiusRatio: CGFloat = 0.55
+// MARK: - Notification Banner (YOU BEAT CPU, THE TEN!, ecc.) - stile esplosione comics
+// Usa la stessa logica di StarburstShape: esplosione con raggi, innerRadius più alto per spazio testo
+struct NotificationBannerView: View {
+    let message: String
+    var scale: CGFloat = 1.0
+    
+    private var bannerWidth: CGFloat { 300 * scale }
+    private var bannerHeight: CGFloat { 110 * scale }
+    
+    private var bannerBurst: StarburstShape {
+        StarburstShape(
+            points: 16,
+            innerRadiusRatio: 0.68,
+            horizontalStretch: 2.5,
+            verticalStretch: 1.0
+        )
+    }
+    
+    var body: some View {
+        ZStack {
+            bannerBurst
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 255/255, green: 235/255, blue: 80/255),
+                            Color(red: 255/255, green: 200/255, blue: 30/255)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(bannerBurst.stroke(Color.black, lineWidth: 3))
+                .shadow(color: .black.opacity(0.4), radius: 2, x: 2, y: 2)
+            
+            Text(message)
+                .font(.custom("PressStart2P-Regular", size: 11 * scale))
+                .foregroundColor(.black)
+                .multilineTextAlignment(.center)
+                .lineLimit(3)
+                .minimumScaleFactor(0.7)
+                .padding(.horizontal, 20 * scale)
+                .padding(.vertical, 10 * scale)
+        }
+        .frame(width: bannerWidth, height: bannerHeight)
+    }
+}
 
-    let horizontalStretch: CGFloat = 1.45
-    let verticalStretch: CGFloat = 1.15
+struct StarburstShape: Shape {
+    let points: Int
+    let innerRadiusRatio: CGFloat
+    let horizontalStretch: CGFloat
+    let verticalStretch: CGFloat
+
+    init(
+        points: Int = 16,
+        innerRadiusRatio: CGFloat = 0.55,
+        horizontalStretch: CGFloat = 1.45,
+        verticalStretch: CGFloat = 1.15
+    ) {
+        self.points = points
+        self.innerRadiusRatio = innerRadiusRatio
+        self.horizontalStretch = horizontalStretch
+        self.verticalStretch = verticalStretch
+    }
 
     func path(in rect: CGRect) -> Path {
         let center = CGPoint(x: rect.midX, y: rect.midY)
@@ -495,30 +550,24 @@ struct StarburstShape: Shape {
 
 
 
-#Preview {
-
-
-    VStack {
-        Spacer()
-
-        ZStack {
-            Image("ImgStarbust")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 220)
-
-            Text("CPU TOOK ALL  CARDS ON THE TABLE !!")
-                .font(.custom("PressStart2P-Regular", size: 12))
-                .foregroundColor(.black)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 24)
-        }
-
-
-        Spacer()
+#Preview("Game") {
+    GeometryReader { geo in
+        GameView(onBack: {})
+            .environment(\.watchLayoutMetrics, WatchLayoutMetrics.from(proxy: geo))
     }
-    .transition(.opacity)
-
-
+    .previewDevice("Apple Watch Series 10 (41mm)")
 }
+
+#Preview("Notification Banner") {
+    ZStack {
+        Color.gray.opacity(0.3)
+        VStack(spacing: 8) {
+            NotificationBannerView(message: "YOU CAUGHT\nA TEN", scale: 1.0)
+            NotificationBannerView(message: "CPU TAKES THE CARDS", scale: 1.0)
+        }
+    }
+    .previewDevice("Apple Watch Series 10 (41mm)")
+}
+
+
 
