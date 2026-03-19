@@ -6,6 +6,7 @@
 //
 import SwiftUI
 import Combine
+import WatchKit
 
 
 // MARK: - Card Model
@@ -284,7 +285,7 @@ final class GameViewModel: ObservableObject {
         }
         tablePile.removeAll()
         visiblePile.removeAll()
-        
+        displayMessage = ""
     }
 
     private func checkElimination() -> Bool {
@@ -339,6 +340,7 @@ final class GameViewModel: ObservableObject {
     }
 
     private func handlePlayerCollect(message: String) {
+        WKInterfaceDevice.current().play(.success)
         autoPlayTask?.cancel()
         notificationMessage = "YOU CAUGHT\n\(tapRuleDisplay(message))"
         turnState = .collecting(collectorIsPlayer: true)

@@ -9,6 +9,8 @@ import SwiftUI
 struct PixelButton: View {
     var icon: String? = nil
     var text: String? = nil
+    /// Opzionale: icona SF Symbol accanto al testo (es. `"house.fill"` per il menu).
+    var leadingSystemImage: String? = nil
     var action: () -> Void
     var width: CGFloat
     var height: CGFloat? = nil
@@ -62,15 +64,32 @@ struct PixelButton: View {
                 
                 
                 
-                if(text != nil) {
-                    Text(text!)
-                        .font(.custom("PressStart2P-Regular", size: metrics.scaled(14)))
-                        .foregroundColor(textColor)
-                        .padding(.horizontal, metrics.scaled(8))
-                        .frame(height: viewHeight)
-                        .frame(width: width)
-                        .padding(.top, metrics.scaled(4))
-                }else{
+                if text != nil {
+                    Group {
+                        if let sys = leadingSystemImage {
+                            HStack(spacing: metrics.scaled(6)) {
+                                Image(systemName: sys)
+                                    .font(.system(size: metrics.scaled(15), weight: .bold))
+                                    .foregroundColor(textColor)
+                                Text(text!)
+                                    .font(.custom("PressStart2P-Regular", size: metrics.scaled(14)))
+                                    .foregroundColor(textColor)
+                            }
+                            .padding(.horizontal, metrics.scaled(8))
+                            .frame(height: viewHeight)
+                            .frame(width: width)
+                            .padding(.top, metrics.scaled(4))
+                        } else {
+                            Text(text!)
+                                .font(.custom("PressStart2P-Regular", size: metrics.scaled(14)))
+                                .foregroundColor(textColor)
+                                .padding(.horizontal, metrics.scaled(8))
+                                .frame(height: viewHeight)
+                                .frame(width: width)
+                                .padding(.top, metrics.scaled(4))
+                        }
+                    }
+                } else {
             
                     Image(icon!)
                         .resizable()
