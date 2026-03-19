@@ -109,7 +109,7 @@ struct TutorialView: View {
     private var darkOverlayFinestrellaCard: some View {
         VStack(spacing: metrics.scaled(12)) {
             Text(tutorialVM.darkOverlayText)
-                .font(.custom("PressStart2P-Regular", size: metrics.scaled(12)))
+                .font(.custom("PressStart2P-Regular", size: metrics.scaledText(12)))
                 .foregroundColor(.white)
                 .multilineTextAlignment(.center)
                 .lineSpacing(3)
@@ -128,7 +128,7 @@ struct TutorialView: View {
                     )
                 } else {
                     Text("TAP TO CONTINUE")
-                        .font(.custom("PressStart2P-Regular", size: metrics.scaled(9)))
+                        .font(.custom("PressStart2P-Regular", size: metrics.scaledText(9)))
                         .foregroundColor(.white.opacity(0.6))
                 }
             }
@@ -180,7 +180,7 @@ struct TutorialView: View {
             VStack(spacing: metrics.scaled(8)) {
                 Spacer().frame(height: metrics.scaled(2))
                 Text("PAUSED")
-                    .font(.custom("PressStart2P-Regular", size: metrics.scaled(15)))
+                    .font(.custom("PressStart2P-Regular", size: metrics.scaledText(15)))
                     .foregroundColor(.white)
                 Spacer().frame(height: metrics.scaled(4))
                 PixelButton(
@@ -230,7 +230,7 @@ struct TutorialView: View {
                 Spacer(minLength: 0)
             }
             Text("CARDS")
-                .font(.custom("PressStart2P-Regular", size: metrics.scaled(16)))
+                .font(.custom("PressStart2P-Regular", size: metrics.scaledText(16)))
                 .foregroundColor(.white.opacity(0.7))
         }
         .frame(maxWidth: .infinity)
@@ -244,18 +244,18 @@ struct TutorialView: View {
             HStack(spacing: metrics.scaled(12)) {
                 VStack(spacing: metrics.scaled(2)) {
                     Text("YOU")
-                        .font(.custom("PressStart2P-Regular", size: metrics.scaled(10)))
+                        .font(.custom("PressStart2P-Regular", size: metrics.scaledText(10)))
                         .foregroundColor(.white.opacity(0.7))
                     Text("\(tutorialVM.demoYouCount)")
-                        .font(.custom("PressStart2P-Regular", size: metrics.scaled(18)))
+                        .font(.custom("PressStart2P-Regular", size: metrics.scaledText(18)))
                         .foregroundColor(.white)
                 }
                 VStack(spacing: metrics.scaled(2)) {
                     Text("CPU")
-                        .font(.custom("PressStart2P-Regular", size: metrics.scaled(10)))
+                        .font(.custom("PressStart2P-Regular", size: metrics.scaledText(10)))
                         .foregroundColor(.white.opacity(0.7))
                     Text("\(tutorialVM.demoCpuCount)")
-                        .font(.custom("PressStart2P-Regular", size: metrics.scaled(18)))
+                        .font(.custom("PressStart2P-Regular", size: metrics.scaledText(18)))
                         .foregroundColor(.white)
                 }
             }
@@ -266,7 +266,7 @@ struct TutorialView: View {
 
     private var demoDisplayMessage: some View {
         Text(tutorialVM.demoActionText)
-            .font(.custom("PressStart2P-Regular", size: metrics.scaled(12)))
+            .font(.custom("PressStart2P-Regular", size: metrics.scaledText(12)))
             .foregroundColor(
                 tutorialVM.demoDisplayColor == "green"
                     ? Color(red: 0/255, green: 255/255, blue: 100/255)
@@ -298,7 +298,7 @@ struct TutorialView: View {
             } else if let whoStarts = tutorialVM.demoWhoStartsWhenEmpty {
                 VStack(spacing: metrics.scaled(15)) {
                     Text(whoStarts ? "YOU START" : "CPU START")
-                        .font(.custom("PressStart2P-Regular", size: metrics.scaled(12)))
+                        .font(.custom("PressStart2P-Regular", size: metrics.scaledText(12)))
                         .foregroundColor(.white.opacity(0.5))
                 }
                 .frame(height: metrics.scaled(100))

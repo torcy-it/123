@@ -14,6 +14,8 @@ struct ContentView: View {
     private let menuCardColor = Color(red: 0/255, green: 255/255, blue: 120/255)
 
     private let mainMenuFanHalfWidth: CGFloat = 45
+    /// Sposta tutto il menu **verso l’alto** (padding top negativo). Aumenta se vuoi più su.
+    private let mainMenuPullUp: CGFloat = 45
 
     var body: some View {
         ZStack {
@@ -24,8 +26,8 @@ struct ContentView: View {
             GeometryReader { geo in
                 let h = geo.size.height
                 let w = geo.size.width
-                // Metà inferiore delle carte deve finire dietro START GAME (come mockup).
-                let fanButtonOverlap = max(metrics.scaled(44), h * 0.20)
+            
+                let fanButtonOverlap = max(metrics.scaled(52), h * 0.24)
 
                 VStack(spacing: 0) {
 
@@ -36,7 +38,7 @@ struct ContentView: View {
                             .zIndex(0)
 
                         PixelButton(
-                            text: "START GAME",
+                            text: "PLAY",
                             action: {
                                 onNavigate(.game)
                             },
@@ -50,20 +52,21 @@ struct ContentView: View {
                         .zIndex(1)
                     }
 
-                    Spacer(minLength: h * 0.03)
+                    Spacer(minLength: h * 0.1)
 
-                    HStack(spacing: metrics.scaled(12)) {
+                    HStack(spacing: metrics.scaled(8)) {
                         PixelButton(
                             text: "TUTORIAL",
                             action: {
                                 onNavigate(.tutorial)
                             },
-                            width: min(metrics.scaled(130), (w - metrics.scaled(20)) * 0.68),
+                            width: min(metrics.scaled(136), (w - metrics.scaled(16)) * 0.74),
                             height: metrics.scaled(43),
                             primaryColor: Color(red: 0/255, green: 255/255, blue: 120/255),
                             secondaryColor: Color(red: 0/255, green: 140/255, blue: 70/255),
                             highlightedColor: Color(red: 180/255, green: 255/255, blue: 210/255),
-                            textColor: Color.black
+                            textColor: Color.black,
+                            textPointSize: 10
                         )
 
                         PixelButton(
@@ -83,6 +86,7 @@ struct ContentView: View {
 
                     Spacer(minLength: h * 0.06)
                 }
+                .padding(.top, -metrics.scaled(mainMenuPullUp))
                 .frame(width: geo.size.width, height: geo.size.height)
             }
         }
@@ -161,7 +165,7 @@ struct GameCard: View {
             
             // Numero centrale con font pixel
             Text(number)
-                .font(.custom("PressStart2P-Regular", size: 24 * metrics.scale))
+                .font(.custom("PressStart2P-Regular", size: metrics.scaledText(24)))
                 .foregroundColor(.black)
         }
         // Angoli — overlay separati come nel GameView
@@ -185,7 +189,7 @@ struct GameCard: View {
     
     private var cornerNumber: some View {
         Text(number)
-            .font(.custom("PressStart2P-Regular", size: 6 * metrics.scale))
+            .font(.custom("PressStart2P-Regular", size: metrics.scaledText(6)))
             .foregroundColor(.black)
     }
 }

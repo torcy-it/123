@@ -18,8 +18,22 @@ struct WatchLayoutMetrics {
         value * scale
     }
 
+    /// Scala **solo i font / testi**: su Watch con `scale &lt; 1` (schermo più stretto del
+    /// reference ~40mm) riduce **più** di `scaled`, così il salto tra modelli si nota.
+    /// Da `scale == 1` in su (Ultra / grandi) coincide con `scaled` → niente doppia penalità.
+    func scaledText(_ base: CGFloat) -> CGFloat {
+        let s = scale
+        if s >= 1.0 {
+            return base * s
+        }
+        // Tra scale 0.75 e 1.0: fattore extra da ~0.85 (max taglio sui più piccoli) a 1.0.
+        let t = max(0, min(1, (s - 0.75) / (1.0 - 0.75)))
+        let textBoost = 0.85 + 0.15 * t
+        return base * s * textBoost
+    }
+
     /// Scala con limiti per evitare valori estremi.
-    /// Usa `from(proxy:)` per considerare la safe area.
+    /// Usa `from(proxy:)` per la taglia finestra reale.
     static func from(size: CGSize) -> WatchLayoutMetrics {
         let ref: CGFloat = 197  // 40mm watch
         let minDim = min(size.width, size.height)
@@ -28,16 +42,11 @@ struct WatchLayoutMetrics {
         return WatchLayoutMetrics(scale: clamped)
     }
 
-    /// Calcola le metriche dall'area effettivamente utilizzabile (esclude safe area).
+    /// Calcola le metriche dalla finestra usando **`proxy.size` intero** (non solo l’area dentro la safe area), così `min(width,height)` differisce tra modelli; altrimenti `scale` risultava troppo simile ovunque.
     static func from(proxy: GeometryProxy) -> WatchLayoutMetrics {
-        let insets = proxy.safeAreaInsets
-        let usableWidth = proxy.size.width - insets.leading - insets.trailing
-        let usableHeight = proxy.size.height - insets.top - insets.bottom
-        let usableSize = CGSize(
-            width: max(1, usableWidth),
-            height: max(1, usableHeight)
-        )
-        return from(size: usableSize)
+        let w = max(1, proxy.size.width)
+        let h = max(1, proxy.size.height)
+        return from(size: CGSize(width: w, height: h))
     }
 }
 

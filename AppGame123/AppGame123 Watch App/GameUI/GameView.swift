@@ -96,7 +96,7 @@ struct GameView: View {
                     }
                     
                     Text("CARDS")
-                        .font(.custom("PressStart2P-Regular", size: metrics.scaled(16)))
+                        .font(.custom("PressStart2P-Regular", size: metrics.scaledText(16)))
                         .foregroundColor(.white.opacity(0.7))
                 }
                 .frame(maxWidth: .infinity)
@@ -110,19 +110,19 @@ struct GameView: View {
                     HStack(spacing: metrics.scaled(12)) {
                         VStack(spacing: metrics.scaled(2)) {
                             Text("YOU")
-                                .font(.custom("PressStart2P-Regular", size: metrics.scaled(10)))
+                                .font(.custom("PressStart2P-Regular", size: metrics.scaledText(10)))
                                 .foregroundColor(.white.opacity(0.7))
                             Text("\(viewModel.playerDeck.count)")
-                                .font(.custom("PressStart2P-Regular", size: metrics.scaled(18)))
+                                .font(.custom("PressStart2P-Regular", size: metrics.scaledText(18)))
                                 .foregroundColor(.white)
                         }
                         
                         VStack(spacing: metrics.scaled(2)) {
                             Text("CPU")
-                                .font(.custom("PressStart2P-Regular", size: metrics.scaled(10)))
+                                .font(.custom("PressStart2P-Regular", size: metrics.scaledText(10)))
                                 .foregroundColor(.white.opacity(0.7))
                             Text("\(viewModel.cpuDeck.count)")
-                                .font(.custom("PressStart2P-Regular", size: metrics.scaled(18)))
+                                .font(.custom("PressStart2P-Regular", size: metrics.scaledText(18)))
                                 .foregroundColor(.white)
                         }
                     }
@@ -136,7 +136,7 @@ struct GameView: View {
                 
                 // Indicatore turno - SOPRA LE CARTE
                 Text(viewModel.displayMessage)
-                    .font(.custom("PressStart2P-Regular", size: metrics.scaled(12)))
+                    .font(.custom("PressStart2P-Regular", size: metrics.scaledText(12)))
                     .foregroundColor(
                         viewModel.displayColor == "green"
                             ? Color(red: 0/255, green: 255/255, blue: 100/255)
@@ -176,7 +176,7 @@ struct GameView: View {
                         // Pila vuota: chi inizia (chi ha preso le carte o il turno corrente)
                         VStack(spacing: metrics.scaled(15)) {
                             Text(whoStartsWhenPileEmpty ? "YOU START" : "CPU START")
-                                .font(.custom("PressStart2P-Regular", size: metrics.scaled(12)))
+                                .font(.custom("PressStart2P-Regular", size: metrics.scaledText(12)))
                                 .foregroundColor(.white.opacity(0.5))
                         }
                         .frame(height: metrics.scaled(100))
@@ -209,7 +209,7 @@ struct GameView: View {
                         Spacer().frame(height: metrics.scaled(2))
                         
                         Text("PAUSED")
-                            .font(.custom("PressStart2P-Regular", size: metrics.scaled(15)))
+                            .font(.custom("PressStart2P-Regular", size: metrics.scaledText(15)))
                             .foregroundColor(.white)
                         
                         Spacer().frame(height: metrics.scaled(4))
@@ -271,13 +271,13 @@ struct GameView: View {
                         Spacer().frame(height: metrics.scaled(2))
                         
                         Text("GAME OVER")
-                            .font(.custom("PressStart2P-Regular", size: metrics.scaled(15)))
+                            .font(.custom("PressStart2P-Regular", size: metrics.scaledText(15)))
                             .foregroundColor(.white)
                         
                         Spacer().frame(height: metrics.scaled(4))
                         
                         Text("\(viewModel.winner.uppercased() == "PLAYER" ? "YOU" : "THE HOUSE") WINS!")
-                            .font(.custom("PressStart2P-Regular", size: metrics.scaled(8)))
+                            .font(.custom("PressStart2P-Regular", size: metrics.scaledText(8)))
                             .foregroundColor(Color(red: 0/255, green: 255/255, blue: 100/255))
                             .multilineTextAlignment(.center)
                         

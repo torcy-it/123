@@ -18,6 +18,8 @@ struct PixelButton: View {
     var secondaryColor: Color
     var highlightedColor: Color
     var textColor: Color
+    /// Dimensione base (prima di `metrics.scaled`) per `PressStart2P` sul testo.
+    var textPointSize: CGFloat = 14
     @Environment(\.watchLayoutMetrics) private var metrics
 
     var body: some View {
@@ -69,23 +71,27 @@ struct PixelButton: View {
                         if let sys = leadingSystemImage {
                             HStack(spacing: metrics.scaled(6)) {
                                 Image(systemName: sys)
-                                    .font(.system(size: metrics.scaled(15), weight: .bold))
+                                    .font(.system(size: metrics.scaledText(15), weight: .bold))
                                     .foregroundColor(textColor)
                                 Text(text!)
-                                    .font(.custom("PressStart2P-Regular", size: metrics.scaled(14)))
+                                    .font(.custom("PressStart2P-Regular", size: metrics.scaledText(textPointSize)))
                                     .foregroundColor(textColor)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.45)
+                                    .multilineTextAlignment(.center)
                             }
-                            .padding(.horizontal, metrics.scaled(8))
-                            .frame(height: viewHeight)
-                            .frame(width: width)
+                            .padding(.horizontal, metrics.scaled(4))
+                            .frame(width: width, height: viewHeight)
                             .padding(.top, metrics.scaled(4))
                         } else {
                             Text(text!)
-                                .font(.custom("PressStart2P-Regular", size: metrics.scaled(14)))
+                                .font(.custom("PressStart2P-Regular", size: metrics.scaledText(textPointSize)))
                                 .foregroundColor(textColor)
-                                .padding(.horizontal, metrics.scaled(8))
-                                .frame(height: viewHeight)
-                                .frame(width: width)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.45)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, metrics.scaled(4))
+                                .frame(width: width, height: viewHeight)
                                 .padding(.top, metrics.scaled(4))
                         }
                     }
