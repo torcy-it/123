@@ -39,9 +39,22 @@
 		17BBD9B32EEC3E1D0076EB1B /* AppGame123 Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "AppGame123 Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		1795C22A2F72B192003DC75B /* Exceptions for "AppGame123 Watch App" folder in "AppGame123" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				icon123.icon,
+			);
+			target = 17BBD9AC2EEC3E1D0076EB1B /* AppGame123 */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		17BBD9B72EEC3E1D0076EB1B /* AppGame123 Watch App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				1795C22A2F72B192003DC75B /* Exceptions for "AppGame123 Watch App" folder in "AppGame123" target */,
+			);
 			path = "AppGame123 Watch App";
 			sourceTree = "<group>";
 		};
@@ -312,7 +325,7 @@
 		17BBD9C12EEC3E1E0076EB1B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = icon123;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -346,7 +359,7 @@
 		17BBD9C22EEC3E1E0076EB1B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = icon123;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
