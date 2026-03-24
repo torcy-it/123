@@ -25,6 +25,9 @@ struct TutorialView: View {
     /// Margine sotto al bottone per lo `Color.clear` della HUD (allinea a `top + altezza bottone ~28 + questo`)
     private let tutorialOverlayPauseBelowButtonPoints: CGFloat = 8
 
+    /// Come `GameView.modalOverlayTopReserve` (altezza fissa, non `Spacer(minLength:)` espandibile).
+    private var tutorialPauseTopReserve: CGFloat { metrics.scaled(78) }
+
     var body: some View {
         ZStack(alignment: .top) {
             BackgroundTexture()
@@ -183,50 +186,56 @@ struct TutorialView: View {
         ZStack {
             Color.black.opacity(0.55)
                 .ignoresSafeArea()
-            VStack(spacing: metrics.scaled(8)) {
-                Spacer().frame(height: metrics.scaled(2))
-                Text(appSettings.text(.game_paused))
-                    .font(.custom("PressStart2P-Regular", size: metrics.scaledText(15)))
-                    .foregroundColor(.white)
-                Spacer().frame(height: metrics.scaled(4))
-                PixelButton(
-                    text: appSettings.text(.game_resume),
-                    action: { isTutorialPaused = false },
-                    width: metrics.scaled(170),
-                    height: metrics.scaled(40),
-                    primaryColor: Color(red: 0/255, green: 255/255, blue: 120/255),
-                    secondaryColor: Color(red: 0/255, green: 140/255, blue: 70/255),
-                    highlightedColor: Color(red: 180/255, green: 255/255, blue: 210/255),
-                    textColor: Color.black
-                )
-                Spacer().frame(height: metrics.scaled(4))
-                PixelButton(
-                    text: appSettings.text(.game_main_menu),
-                    action: {
-                        isTutorialPaused = false
-                        onFinish()
-                    },
-                    width: metrics.scaled(170),
-                    height: metrics.scaled(40),
-                    primaryColor: Color(red: 218/255, green: 0/255, blue: 206/255),
-                    secondaryColor: Color(red: 134/255, green: 0/255, blue: 126/255),
-                    highlightedColor: Color(red: 250/255, green: 115/255, blue: 251/255),
-                    textColor: Color.white
-                )
-                Spacer().frame(height: metrics.scaled(4))
-            }
-            .padding(metrics.scaled(8))
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.black.opacity(0.9))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.white, lineWidth: 2)
+            VStack(spacing: 0) {
+                Color.clear
+                    .frame(height: tutorialPauseTopReserve)
+                VStack(spacing: metrics.scaled(8)) {
+                    Spacer().frame(height: metrics.scaled(2))
+                    Text(appSettings.text(.game_paused))
+                        .font(.custom("PressStart2P-Regular", size: metrics.scaledText(15)))
+                        .foregroundColor(.white)
+                    Spacer().frame(height: metrics.scaled(4))
+                    PixelButton(
+                        text: appSettings.text(.game_resume),
+                        action: { isTutorialPaused = false },
+                        width: metrics.scaled(170),
+                        height: metrics.scaled(40),
+                        primaryColor: Color(red: 0/255, green: 255/255, blue: 120/255),
+                        secondaryColor: Color(red: 0/255, green: 140/255, blue: 70/255),
+                        highlightedColor: Color(red: 180/255, green: 255/255, blue: 210/255),
+                        textColor: Color.black
                     )
-            )
-            .padding(metrics.scaled(6))
+                    Spacer().frame(height: metrics.scaled(4))
+                    PixelButton(
+                        text: appSettings.text(.game_main_menu),
+                        action: {
+                            isTutorialPaused = false
+                            onFinish()
+                        },
+                        width: metrics.scaled(170),
+                        height: metrics.scaled(40),
+                        primaryColor: Color(red: 218/255, green: 0/255, blue: 206/255),
+                        secondaryColor: Color(red: 134/255, green: 0/255, blue: 126/255),
+                        highlightedColor: Color(red: 250/255, green: 115/255, blue: 251/255),
+                        textColor: Color.white
+                    )
+                    Spacer().frame(height: metrics.scaled(4))
+                }
+                .padding(metrics.scaled(8))
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color.black.opacity(0.9))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.white, lineWidth: 2)
+                        )
+                )
+                .padding(metrics.scaled(6))
+                Spacer(minLength: 0)
+            }
+            .padding(.bottom, metrics.scaled(10))
         }
-        .offset(y: metrics.scaled(-35))
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var tutorialHeader: some View {

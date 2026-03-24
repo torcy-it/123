@@ -62,6 +62,9 @@ struct GameView: View {
         if case .paused = viewModel.turnState { return true }
         return false
     }
+
+    /// Altezza fissa sotto il bordo schermo prima del box (non usare `Spacer(minLength:)` qui: si espanderebbe e spingerebbe il pannello in basso tagliandolo).
+    private var modalOverlayTopReserve: CGFloat { metrics.scaled(0) }
     
     var body: some View {
         ZStack {
@@ -198,114 +201,112 @@ struct GameView: View {
             .zIndex(1)
 
             
-            // FINESTRA PAUSA
+            // FINESTRA PAUSA: ancorata sotto HUD + riga turno (stessa posizione con o senza carte sul tavolo)
             if isPaused && !viewModel.gameOver {
                 ZStack {
                     Color.black.opacity(0.55)
                         .ignoresSafeArea()
-                    VStack(spacing: metrics.scaled(8)) {
-                        Spacer().frame(height: metrics.scaled(2))
-                        
-                        Text(appSettings.text(.game_paused))
-                            .font(.custom("PressStart2P-Regular", size: metrics.scaledText(15)))
-                            .foregroundColor(.white)
-                        
-                        Spacer().frame(height: metrics.scaled(4))
-                        
-                        
-                        PixelButton(
-                            text: appSettings.text(.game_resume),
-                            action: {
-                                viewModel.resume()
-                            },
-                            width: metrics.scaled(170),
-                            height: metrics.scaled(40),
-                            primaryColor: Color(red: 0/255, green: 255/255, blue: 120/255),
-                            secondaryColor: Color(red: 0/255, green: 140/255, blue: 70/255),
-                            highlightedColor: Color(red: 180/255, green: 255/255, blue: 210/255),
-                            textColor: Color.black
-                        )
-                        
-                        Spacer().frame(height: metrics.scaled(4))
-                        
-                        PixelButton(
-                            text: appSettings.text(.game_main_menu),
-                            action: {
-                                onBack()
-                            },
-                            width: metrics.scaled(170),
-                            height: metrics.scaled(40),
-                            primaryColor: Color(red: 218/255, green: 0/255, blue: 206/255),
-                            secondaryColor: Color(red: 134/255, green: 0/255, blue: 126/255),
-                            highlightedColor: Color(red: 250/255, green: 115/255, blue: 251/255),
-                            textColor: Color.white
-                        )
-                        
-                        Spacer().frame(height: metrics.scaled(4))
-
-                
-                    }
-                    .padding(metrics.scaled(8))
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.black.opacity(0.9))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .stroke(Color.white, lineWidth: 2)
+                    VStack(spacing: 0) {
+                        Color.clear
+                            .frame(height: modalOverlayTopReserve)
+                        VStack(spacing: metrics.scaled(8)) {
+                            Spacer().frame(height: metrics.scaled(2))
+                            Text(appSettings.text(.game_paused))
+                                .font(.custom("PressStart2P-Regular", size: metrics.scaledText(15)))
+                                .foregroundColor(.white)
+                            Spacer().frame(height: metrics.scaled(4))
+                            PixelButton(
+                                text: appSettings.text(.game_resume),
+                                action: {
+                                    viewModel.resume()
+                                },
+                                width: metrics.scaled(170),
+                                height: metrics.scaled(40),
+                                primaryColor: Color(red: 0/255, green: 255/255, blue: 120/255),
+                                secondaryColor: Color(red: 0/255, green: 140/255, blue: 70/255),
+                                highlightedColor: Color(red: 180/255, green: 255/255, blue: 210/255),
+                                textColor: Color.black
                             )
-                    )
-                    .padding(metrics.scaled(6))
-                    
-                }.offset(y: metrics.scaled(-35))
+                            Spacer().frame(height: metrics.scaled(4))
+                            PixelButton(
+                                text: appSettings.text(.game_main_menu),
+                                action: {
+                                    onBack()
+                                },
+                                width: metrics.scaled(170),
+                                height: metrics.scaled(40),
+                                primaryColor: Color(red: 218/255, green: 0/255, blue: 206/255),
+                                secondaryColor: Color(red: 134/255, green: 0/255, blue: 126/255),
+                                highlightedColor: Color(red: 250/255, green: 115/255, blue: 251/255),
+                                textColor: Color.white
+                            )
+                            Spacer().frame(height: metrics.scaled(4))
+                        }
+                        .padding(metrics.scaled(8))
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.black.opacity(0.9))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(Color.white, lineWidth: 2)
+                                )
+                        )
+                        .padding(metrics.scaled(6))
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.bottom, metrics.scaled(10))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .zIndex(3)
             }
             
-            // Game Over
+            // Game Over (stessa ancoratura verticale della pausa)
             if viewModel.gameOver {
                 ZStack {
                     Color.black.opacity(0.55)
                         .ignoresSafeArea()
-                    VStack(spacing: metrics.scaled(8)) {
-                        Spacer().frame(height: metrics.scaled(2))
-                        
-                        Text(appSettings.text(.game_over))
-                            .font(.custom("PressStart2P-Regular", size: metrics.scaledText(15)))
-                            .foregroundColor(.white)
-                        
-                        Spacer().frame(height: metrics.scaled(4))
-                        
-                        Text(viewModel.winner.uppercased() == "PLAYER" ? appSettings.text(.game_you_win) : appSettings.text(.game_house_wins))
-                            .font(.custom("PressStart2P-Regular", size: metrics.scaledText(8)))
-                            .foregroundColor(Color(red: 0/255, green: 255/255, blue: 100/255))
-                            .multilineTextAlignment(.center)
-                        
-                        PixelButton(
-                            text: appSettings.text(.game_main_menu),
-                            action: {
-                                onBack()
-                            },
-                            width: metrics.scaled(180),
-                            height: metrics.scaled(40),
-                            primaryColor: Color(red: 218/255, green: 0/255, blue: 206/255),
-                            secondaryColor: Color(red: 134/255, green: 0/255, blue: 126/255),
-                            highlightedColor: Color(red: 250/255, green: 115/255, blue: 251/255),
-                            textColor: Color.white
-                        )
-                        
-                        Spacer().frame(height: metrics.scaled(4))
-                    }
-                    .padding(metrics.scaled(8))
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.black.opacity(0.9))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .stroke(Color.white, lineWidth: 2)
+                    VStack(spacing: 0) {
+                        Color.clear
+                            .frame(height: modalOverlayTopReserve)
+                        VStack(spacing: metrics.scaled(8)) {
+                            Spacer().frame(height: metrics.scaled(2))
+                            Text(appSettings.text(.game_over))
+                                .font(.custom("PressStart2P-Regular", size: metrics.scaledText(15)))
+                                .foregroundColor(.white)
+                            Spacer().frame(height: metrics.scaled(4))
+                            Text(viewModel.winner.uppercased() == "PLAYER" ? appSettings.text(.game_you_win) : appSettings.text(.game_house_wins))
+                                .font(.custom("PressStart2P-Regular", size: metrics.scaledText(8)))
+                                .foregroundColor(Color(red: 0/255, green: 255/255, blue: 100/255))
+                                .multilineTextAlignment(.center)
+                            PixelButton(
+                                text: appSettings.text(.game_main_menu),
+                                action: {
+                                    onBack()
+                                },
+                                width: metrics.scaled(180),
+                                height: metrics.scaled(40),
+                                primaryColor: Color(red: 218/255, green: 0/255, blue: 206/255),
+                                secondaryColor: Color(red: 134/255, green: 0/255, blue: 126/255),
+                                highlightedColor: Color(red: 250/255, green: 115/255, blue: 251/255),
+                                textColor: Color.white
                             )
-                    )
-                    .padding(metrics.scaled(6))
+                            Spacer().frame(height: metrics.scaled(4))
+                        }
+                        .padding(metrics.scaled(8))
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.black.opacity(0.9))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(Color.white, lineWidth: 2)
+                                )
+                        )
+                        .padding(metrics.scaled(6))
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.bottom, metrics.scaled(10))
                 }
-                .offset(y: metrics.scaled(-35))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .zIndex(3)
             }
         }
