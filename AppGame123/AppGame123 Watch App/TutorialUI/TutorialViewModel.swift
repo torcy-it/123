@@ -11,6 +11,26 @@ import Combine
 @MainActor
 final class TutorialViewModel: ObservableObject {
 
+    var appSettings: AppSettings?
+
+    private var Llang: AppLanguage {
+        appSettings?.language ?? .english
+    }
+
+    private func T(_ key: L10nKey) -> String {
+        L10n.string(key, language: Llang)
+    }
+
+    private func TF(_ key: L10nKey, _ value: Int) -> String {
+        L10n.format(key, language: Llang, value)
+    }
+
+    /// Richiama dopo cambio lingua dalle impostazioni.
+    func bind(settings: AppSettings) {
+        appSettings = settings
+        applyStep(step)
+    }
+
     enum Step: Equatable {
         // Info screens (text + button)
         case goal
@@ -123,39 +143,39 @@ final class TutorialViewModel: ObservableObject {
 
         switch s {
         case .goal:
-            darkOverlayText = "GOAL\nTake all opponent cards\nto WIN.\nNo cards = LOSE."
+            darkOverlayText = T(.tutorial_goal)
             showDarkOverlay = true
             waitingForTap = true
 
         case .deck1:
-            darkOverlayText = "DECK\n20 cards each,\nauto-shuffled."
+            darkOverlayText = T(.tutorial_deck_shuffle)
             showDarkOverlay = true
             waitingForTap = true
 
         case .deck2:
-            darkOverlayText = "Cards play automatically.\nSpeed = difficulty."
+            darkOverlayText = T(.tutorial_speed_difficulty)
             showDarkOverlay = true
             waitingForTap = true
 
         case .pause:
-            darkOverlayText = "PAUSE\nTap the yellow button\nto pause."
+            darkOverlayText = T(.tutorial_pause_yellow)
             showDarkOverlay = true
             waitingForTap = true
 
         case .collecting:
-            darkOverlayText = "COLLECTING\nCards go to the bottom\nof your deck."
+            darkOverlayText = T(.tutorial_collecting_bottom)
             showDarkOverlay = true
             waitingForTap = true
 
         case .specialCards:
-            darkOverlayText = "SPECIAL 1-2-3\nForce opponent to\nflip 1, 2 or 3 cards."
+            darkOverlayText = T(.tutorial_special_123)
             showDarkOverlay = true
             waitingForTap = true
 
         case .demoFirstRound:
             demoYouCount = 20
             demoCpuCount = 20
-            demoActionText = "FIRST ROUND: YOU START"
+            demoActionText = T(.tutorial_first_round_you_start)
             demoDisplayColor = "green"
             demoWhoStartsWhenEmpty = true
             scheduleAdvance(1_200_000_000)
@@ -163,7 +183,7 @@ final class TutorialViewModel: ObservableObject {
         case .demoYouThrow2:
             demoYouCount = 19
             demoCpuCount = 20
-            demoActionText = "YOU THREW 2"
+            demoActionText = TF(.tutorial_you_threw_fmt, 2)
             demoDisplayColor = "green"
             demoVisibleCards = [(2, true)]
             scheduleAdvance(1_200_000_000)
@@ -171,23 +191,23 @@ final class TutorialViewModel: ObservableObject {
         case .demoCpuThrow7:
             demoYouCount = 19
             demoCpuCount = 18
-            demoActionText = "CPU THREW 7"
+            demoActionText = TF(.tutorial_cpu_threw_fmt, 7)
             demoDisplayColor = "yellow"
             demoVisibleCards = [(2, true), (7, false)]
             scheduleAdvance(1_200_000_000)
 
         case .explainCollecting:
-            darkOverlayText = "You took the cards!\n(No 1-2-3 was played)"
+            darkOverlayText = T(.tutorial_you_took_cards_note)
             showDarkOverlay = true
             waitingForTap = true
 
         case .explainTurnPass:
-            darkOverlayText = "If opponent plays 1, 2 or 3\nthe turn passes to you."
+            darkOverlayText = T(.tutorial_turn_pass_123)
             showDarkOverlay = true
             waitingForTap = true
 
         case .introSpecial:
-            darkOverlayText = "What if opponent\nthrows a special card?"
+            darkOverlayText = T(.tutorial_what_if_special)
             showDarkOverlay = true
             demoYouCount = 22
             demoCpuCount = 17
@@ -196,7 +216,7 @@ final class TutorialViewModel: ObservableObject {
         case .demoYouThrow2b:
             demoYouCount = 22
             demoCpuCount = 17
-            demoActionText = "YOU THREW 2"
+            demoActionText = TF(.tutorial_you_threw_fmt, 2)
             demoDisplayColor = "green"
             demoVisibleCards = [(2, true)]
             scheduleAdvance(1_200_000_000)
@@ -204,30 +224,30 @@ final class TutorialViewModel: ObservableObject {
         case .demoCpuThrow1:
             demoYouCount = 22
             demoCpuCount = 16
-            demoActionText = "CPU THREW 1"
+            demoActionText = TF(.tutorial_cpu_threw_fmt, 1)
             demoDisplayColor = "yellow"
             demoVisibleCards = [(2, true), (1, false)]
             scheduleAdvance(1_200_000_000)
 
         case .demoYourTurn:
-            demoActionText = "YOUR TURN\nPlay 1 card"
+            demoActionText = T(.tutorial_your_turn_play_one)
             demoDisplayColor = "green"
             scheduleAdvance(1_200_000_000)
 
         case .theTwinIntro:
-            darkOverlayText = "Another way to collect:"
+            darkOverlayText = T(.tutorial_another_way)
             showDarkOverlay = true
             waitingForTap = true
 
         case .theTwin:
-            darkOverlayText = "THE TWIN\nSame number twice?\nTAP to take all!"
+            darkOverlayText = T(.tutorial_the_twin_explain)
             showDarkOverlay = true
             waitingForTap = true
 
         case .demoCpuStart:
             demoYouCount = 20
             demoCpuCount = 20
-            demoActionText = "FIRST ROUND: CPU START"
+            demoActionText = T(.tutorial_first_round_cpu_start)
             demoDisplayColor = "yellow"
             demoVisibleCards = []
             demoWhoStartsWhenEmpty = false
@@ -236,7 +256,7 @@ final class TutorialViewModel: ObservableObject {
         case .demoCpu4:
             demoYouCount = 20
             demoCpuCount = 19
-            demoActionText = "CPU THREW 4"
+            demoActionText = TF(.tutorial_cpu_threw_fmt, 4)
             demoDisplayColor = "yellow"
             demoVisibleCards = [(4, false)]
             scheduleAdvance(1_200_000_000)
@@ -244,7 +264,7 @@ final class TutorialViewModel: ObservableObject {
         case .demoYou3:
             demoYouCount = 19
             demoCpuCount = 19
-            demoActionText = "YOU THREW 3"
+            demoActionText = TF(.tutorial_you_threw_fmt, 3)
             demoDisplayColor = "green"
             demoVisibleCards = [(4, false), (3, true)]
             scheduleAdvance(1_200_000_000)
@@ -252,7 +272,7 @@ final class TutorialViewModel: ObservableObject {
         case .demoCpu5:
             demoYouCount = 19
             demoCpuCount = 18
-            demoActionText = "CPU THREW 5"
+            demoActionText = TF(.tutorial_cpu_threw_fmt, 5)
             demoDisplayColor = "yellow"
             demoVisibleCards = [(4, false), (3, true), (5, false)]
             scheduleAdvance(1_200_000_000)
@@ -260,46 +280,46 @@ final class TutorialViewModel: ObservableObject {
         case .demoCpu5Twin:
             demoYouCount = 19
             demoCpuCount = 17
-            demoActionText = "CPU THREW 5"
+            demoActionText = TF(.tutorial_cpu_threw_fmt, 5)
             demoDisplayColor = "yellow"
             demoVisibleCards = [(4, false), (3, true), (5, false), (5, false)]
             scheduleAdvance(1_200_000_000)
 
         case .twinPopup:
-            darkOverlayText = "TWIN!\nSame card twice.\nTAP to collect!"
+            darkOverlayText = T(.tutorial_twin_popup)
             showDarkOverlay = true
             waitingForTap = true
 
         case .youCaughtTwin:
             showStarburst = true
-            starburstMessage = "YOU CAUGHT\nA TWIN"
+            starburstMessage = T(.tutorial_you_caught_twin_banner)
             demoYouCount = 23
             demoCpuCount = 17
-            demoActionText = "YOUR TURN"
+            demoActionText = T(.tutorial_your_turn)
             demoDisplayColor = "green"
             demoVisibleCards = []
             demoWhoStartsWhenEmpty = true
             scheduleAdvance(1_200_000_000)
 
         case .tipQuicker:
-            darkOverlayText = "TIP\nBe quicker than CPU!"
+            darkOverlayText = T(.tutorial_tip_quicker)
             showDarkOverlay = true
             waitingForTap = true
 
         case .tipBreakTurn:
-            darkOverlayText = "TIP\nTap breaks forced turn."
+            darkOverlayText = T(.tutorial_tip_tap_break)
             showDarkOverlay = true
             waitingForTap = true
 
         case .theTen:
-            darkOverlayText = "THE TEN\nCards add to 10?\nTAP to collect!"
+            darkOverlayText = T(.tutorial_the_ten_explain)
             showDarkOverlay = true
             waitingForTap = true
 
         case .demoSecondRound:
             demoYouCount = 20
             demoCpuCount = 20
-            demoActionText = "SECOND ROUND: CPU START"
+            demoActionText = T(.tutorial_second_round_cpu_start)
             demoDisplayColor = "yellow"
             demoVisibleCards = []
             demoWhoStartsWhenEmpty = false
@@ -308,7 +328,7 @@ final class TutorialViewModel: ObservableObject {
         case .demoCpu3:
             demoYouCount = 20
             demoCpuCount = 19
-            demoActionText = "CPU THREW 3"
+            demoActionText = TF(.tutorial_cpu_threw_fmt, 3)
             demoDisplayColor = "yellow"
             demoVisibleCards = [(3, false)]
             scheduleAdvance(1_200_000_000)
@@ -316,14 +336,14 @@ final class TutorialViewModel: ObservableObject {
         case .demoYou7:
             demoYouCount = 19
             demoCpuCount = 19
-            demoActionText = "YOU THREW 7"
+            demoActionText = TF(.tutorial_you_threw_fmt, 7)
             demoDisplayColor = "green"
             demoVisibleCards = [(3, false), (7, true)]
             scheduleAdvance(800_000_000)
 
         case .cpuCaughtTen:
             showStarburst = true
-            starburstMessage = "CPU CAUGHT\nA TEN"
+            starburstMessage = T(.tutorial_cpu_caught_ten_banner)
             demoYouCount = 19
             demoCpuCount = 21
             demoActionText = ""
@@ -332,31 +352,31 @@ final class TutorialViewModel: ObservableObject {
             scheduleAdvance(1_200_000_000)
 
         case .theTenFormula:
-            darkOverlayText = "THE TEN\n7 + 3 = 10!"
+            darkOverlayText = T(.tutorial_ten_formula)
             showDarkOverlay = true
             demoYouCount = 19
             demoCpuCount = 21
             waitingForTap = true
 
         case .theSandwichIntro:
-            darkOverlayText = "THE SANDWICH\nA bit harder..."
+            darkOverlayText = T(.tutorial_sandwich_harder)
             showDarkOverlay = true
             waitingForTap = true
 
         case .sandwichBread:
-            darkOverlayText = "Like a sandwich:\nbread - cheese - bread"
+            darkOverlayText = T(.tutorial_sandwich_bread)
             showDarkOverlay = true
             waitingForTap = true
 
         case .sandwichNumbers:
-            darkOverlayText = "With numbers:\n2  -  7  -  2"
+            darkOverlayText = T(.tutorial_sandwich_numbers)
             showDarkOverlay = true
             waitingForTap = true
 
         case .demoYou2:
             demoYouCount = 19
             demoCpuCount = 21
-            demoActionText = "YOU THREW 2"
+            demoActionText = TF(.tutorial_you_threw_fmt, 2)
             demoDisplayColor = "green"
             demoVisibleCards = [(2, true)]
             scheduleAdvance(1_200_000_000)
@@ -364,7 +384,7 @@ final class TutorialViewModel: ObservableObject {
         case .demoCpu7:
             demoYouCount = 19
             demoCpuCount = 20
-            demoActionText = "CPU THREW 7"
+            demoActionText = TF(.tutorial_cpu_threw_fmt, 7)
             demoDisplayColor = "yellow"
             demoVisibleCards = [(2, true), (7, false)]
             scheduleAdvance(1_200_000_000)
@@ -372,14 +392,14 @@ final class TutorialViewModel: ObservableObject {
         case .sandwichCatch:
             demoYouCount = 19
             demoCpuCount = 20
-            demoActionText = "CPU THREW 2"
+            demoActionText = TF(.tutorial_cpu_threw_fmt, 2)
             demoDisplayColor = "yellow"
             demoVisibleCards = [(2, true), (7, false), (2, false)]
             scheduleAdvance(1_200_000_000)
 
         case .youCaughtSandwich:
             showStarburst = true
-            starburstMessage = "YOU CAUGHT\nA SANDWICH"
+            starburstMessage = T(.tutorial_you_caught_sandwich_banner)
             demoYouCount = 22
             demoCpuCount = 18
             demoActionText = ""
@@ -388,22 +408,22 @@ final class TutorialViewModel: ObservableObject {
             scheduleAdvance(1_200_000_000)
 
         case .sandwichExplain:
-            darkOverlayText = "SANDWICH\nWorks with any numbers!"
+            darkOverlayText = T(.tutorial_sandwich_works_any)
             showDarkOverlay = true
             waitingForTap = true
 
         case .penalties:
-            darkOverlayText = "PENALTY\nWrong tap?\nYou pay!"
+            darkOverlayText = T(.tutorial_penalty_wrong)
             showDarkOverlay = true
             waitingForTap = true
 
         case .penaltyEffect:
-            darkOverlayText = "PENALTY\nLose your top card."
+            darkOverlayText = T(.tutorial_penalty_lose_top)
             showDarkOverlay = true
             waitingForTap = true
 
         case .tipsFinal:
-            darkOverlayText = "TIP\nTrack cards.\nAvoid wrong taps!"
+            darkOverlayText = T(.tutorial_tip_track_cards)
             showDarkOverlay = true
             waitingForTap = true
         }

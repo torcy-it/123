@@ -8,8 +8,10 @@ import SwiftUI
 
 struct GameView: View {
     let onBack: () -> Void
+    @EnvironmentObject private var appSettings: AppSettings
     @StateObject private var viewModel = GameViewModel()
     @Environment(\.watchLayoutMetrics) private var metrics
+    @Environment(\.scenePhase) private var scenePhase
     
     
     private var isPlayerTurn: Bool {
@@ -38,8 +40,8 @@ struct GameView: View {
     private var collectingMessage: String? {
         if case .collecting(let collectorIsPlayer) = viewModel.turnState {
             return collectorIsPlayer
-            ? "YOU TOOK ALL\nCARDS ON THE\nTABLE !!"
-            : "CPU TOOK ALL\nCARDS ON THE\nTABLE !!"
+            ? appSettings.text(.game_you_took_all_table)
+            : appSettings.text(.game_cpu_took_all_table)
         }
         return nil
     }
@@ -95,7 +97,7 @@ struct GameView: View {
                         Spacer(minLength: 0)
                     }
                     
-                    Text("CARDS")
+                    Text(appSettings.text(.game_cards_title))
                         .font(.custom("PressStart2P-Regular", size: metrics.scaledText(16)))
                         .foregroundColor(.white.opacity(0.7))
                 }
@@ -109,7 +111,7 @@ struct GameView: View {
                 HStack(alignment: .center, spacing: metrics.scaled(8)) {
                     HStack(spacing: metrics.scaled(12)) {
                         VStack(spacing: metrics.scaled(2)) {
-                            Text("YOU")
+                            Text(appSettings.text(.game_you))
                                 .font(.custom("PressStart2P-Regular", size: metrics.scaledText(10)))
                                 .foregroundColor(.white.opacity(0.7))
                             Text("\(viewModel.playerDeck.count)")
@@ -118,7 +120,7 @@ struct GameView: View {
                         }
                         
                         VStack(spacing: metrics.scaled(2)) {
-                            Text("CPU")
+                            Text(appSettings.text(.game_cpu))
                                 .font(.custom("PressStart2P-Regular", size: metrics.scaledText(10)))
                                 .foregroundColor(.white.opacity(0.7))
                             Text("\(viewModel.cpuDeck.count)")
@@ -134,7 +136,6 @@ struct GameView: View {
                 
                 Spacer().frame(height: metrics.scaled(12))
                 
-                // Indicatore turno - SOPRA LE CARTE
                 Text(viewModel.displayMessage)
                     .font(.custom("PressStart2P-Regular", size: metrics.scaledText(12)))
                     .foregroundColor(
@@ -144,13 +145,11 @@ struct GameView: View {
                             ? Color(red: 218/255, green: 0/255, blue: 206/255)
                             : Color(red: 255/255, green: 200/255, blue: 0/255)
                     )
+                    .multilineTextAlignment(.center)
                 
-                // Centro del tavolo - Carte a ventaglio
                 ZStack(alignment: .top) {
                     if !viewModel.visiblePile.isEmpty {
-
-        
-                        let visibleCards = viewModel.visiblePile   // sono già max 3
+                        let visibleCards = viewModel.visiblePile
 
                         ForEach(visibleCards.indices, id: \.self) { i in
                             let entry = visibleCards[i]
@@ -171,13 +170,12 @@ struct GameView: View {
                             )
                             .zIndex(Double(i))
                         }
-
                     } else {
-                        // Pila vuota: chi inizia (chi ha preso le carte o il turno corrente)
                         VStack(spacing: metrics.scaled(15)) {
-                            Text(whoStartsWhenPileEmpty ? "YOU START" : "CPU START")
+                            Text(whoStartsWhenPileEmpty ? appSettings.text(.game_you_start) : appSettings.text(.game_cpu_start))
                                 .font(.custom("PressStart2P-Regular", size: metrics.scaledText(12)))
                                 .foregroundColor(.white.opacity(0.5))
+                                .multilineTextAlignment(.center)
                         }
                         .frame(height: metrics.scaled(100))
                     }
@@ -208,7 +206,7 @@ struct GameView: View {
                     VStack(spacing: metrics.scaled(8)) {
                         Spacer().frame(height: metrics.scaled(2))
                         
-                        Text("PAUSED")
+                        Text(appSettings.text(.game_paused))
                             .font(.custom("PressStart2P-Regular", size: metrics.scaledText(15)))
                             .foregroundColor(.white)
                         
@@ -216,7 +214,7 @@ struct GameView: View {
                         
                         
                         PixelButton(
-                            text: "RESUME",
+                            text: appSettings.text(.game_resume),
                             action: {
                                 viewModel.resume()
                             },
@@ -231,7 +229,7 @@ struct GameView: View {
                         Spacer().frame(height: metrics.scaled(4))
                         
                         PixelButton(
-                            text: "MAIN MENU",
+                            text: appSettings.text(.game_main_menu),
                             action: {
                                 onBack()
                             },
@@ -270,19 +268,19 @@ struct GameView: View {
                     VStack(spacing: metrics.scaled(8)) {
                         Spacer().frame(height: metrics.scaled(2))
                         
-                        Text("GAME OVER")
+                        Text(appSettings.text(.game_over))
                             .font(.custom("PressStart2P-Regular", size: metrics.scaledText(15)))
                             .foregroundColor(.white)
                         
                         Spacer().frame(height: metrics.scaled(4))
                         
-                        Text("\(viewModel.winner.uppercased() == "PLAYER" ? "YOU" : "THE HOUSE") WINS!")
+                        Text(viewModel.winner.uppercased() == "PLAYER" ? appSettings.text(.game_you_win) : appSettings.text(.game_house_wins))
                             .font(.custom("PressStart2P-Regular", size: metrics.scaledText(8)))
                             .foregroundColor(Color(red: 0/255, green: 255/255, blue: 100/255))
                             .multilineTextAlignment(.center)
                         
                         PixelButton(
-                            text: "MAIN MENU",
+                            text: appSettings.text(.game_main_menu),
                             action: {
                                 onBack()
                             },
@@ -311,12 +309,31 @@ struct GameView: View {
                 .zIndex(3)
             }
         }
+        .onAppear {
+            viewModel.configure(settings: appSettings)
+        }
+        .onChange(of: appSettings.language) { _ in
+            viewModel.applySettingsUpdate(settings: appSettings)
+        }
+        .onChange(of: appSettings.difficulty) { _ in
+            viewModel.applySettingsUpdate(settings: appSettings)
+        }
+        .onChange(of: scenePhase) { newPhase in
+            switch newPhase {
+            case .inactive, .background:
+                viewModel.pause()
+            case .active:
+                break
+            @unknown default:
+                break
+            }
+        }
         .overlay {
             if let message = viewModel.notificationMessage {
                 ZStack {
                     Color.black.opacity(0.55)
                     NotificationBannerView(message: message, scale: metrics.scale)
-                        .offset(y: starburstOffsetY(for: message))
+                        .offset(y: starburstOffsetY(for: message) + notificationBannerVerticalBias)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .ignoresSafeArea()
@@ -327,10 +344,14 @@ struct GameView: View {
     }
     
 
+    /// Compensa il testo più compatto nello starburst (sembra più in alto senza questo).
+    private var notificationBannerVerticalBias: CGFloat { metrics.scaled(14) }
+
     private func starburstOffsetY(for message: String) -> CGFloat {
-        if message.contains("CAUGHT") { return metrics.scaled(40) }   // tap: A TEN, A TWIN, A SANDWICH
-        if message.contains("PENALTY") { return metrics.scaled(-5) }   // penalty
-        if message.contains("TAKE") { return metrics.scaled(-5) }     // YOU/CPU TAKE THE CARDS
+        let u = message.uppercased()
+        if u.contains("CAUGHT") || u.contains("CATTUR") { return metrics.scaled(40) }
+        if u.contains("PENALTY") || u.contains("PENAL") { return metrics.scaled(-5) }
+        if u.contains("TAKE") || u.contains("PREND") { return metrics.scaled(-5) }
         return metrics.scaled(0)
     }
 
@@ -444,7 +465,8 @@ struct PixelNumber: View {
 }
 
 // MARK: - Notification Banner (YOU BEAT CPU, THE TEN!, ecc.) - stile esplosione comics
-// Usa la stessa logica di StarburstShape: esplosione con raggi, innerRadius più alto per spazio testo
+// Testo vincolato all’area centrale dello starburst: frame fisso + minimumScaleFactor basso
+// così le frasi lunghe (EN/IT) si restringono invece di uscire dalle punte.
 struct NotificationBannerView: View {
     let message: String
     var scale: CGFloat = 1.0
@@ -452,11 +474,15 @@ struct NotificationBannerView: View {
     private var bannerWidth: CGFloat { 300 * scale }
     private var bannerHeight: CGFloat { 110 * scale }
     
+    /// Rettangolo massimo per il testo, dentro la parte “piena” della stella (non le punte).
+    private var textBoxWidth: CGFloat { bannerWidth * 0.70 }
+    private var textBoxHeight: CGFloat { bannerHeight * 0.66 }
+    
     private var bannerBurst: StarburstShape {
         StarburstShape(
             points: 16,
-            innerRadiusRatio: 0.68,
-            horizontalStretch: 2.5,
+            innerRadiusRatio: 0.74,
+            horizontalStretch: 2.45,
             verticalStretch: 1.0
         )
     }
@@ -481,10 +507,10 @@ struct NotificationBannerView: View {
                 .font(.custom("PressStart2P-Regular", size: 11 * scale))
                 .foregroundColor(.black)
                 .multilineTextAlignment(.center)
-                .lineLimit(3)
-                .minimumScaleFactor(0.7)
-                .padding(.horizontal, 20 * scale)
-                .padding(.vertical, 10 * scale)
+                .lineSpacing(1 * scale)
+                .lineLimit(12)
+                .minimumScaleFactor(0.12)
+                .frame(width: textBoxWidth, height: textBoxHeight, alignment: .center)
         }
         .frame(width: bannerWidth, height: bannerHeight)
     }
@@ -554,6 +580,7 @@ struct StarburstShape: Shape {
     GeometryReader { geo in
         GameView(onBack: {})
             .environment(\.watchLayoutMetrics, WatchLayoutMetrics.from(proxy: geo))
+            .environmentObject(AppSettings.preview)
     }
     .previewDevice("Apple Watch Series 10 (41mm)")
 }
@@ -564,6 +591,7 @@ struct StarburstShape: Shape {
         VStack(spacing: 8) {
             NotificationBannerView(message: "YOU CAUGHT\nA TEN", scale: 1.0)
             NotificationBannerView(message: "CPU TAKES THE CARDS", scale: 1.0)
+            NotificationBannerView(message: "LA CPU HA PRESO\nTUTTE LE CARTE SUL\nTAVOLO !!", scale: 0.48)
         }
     }
     .previewDevice("Apple Watch Series 10 (41mm)")

@@ -26,6 +26,12 @@ enum TurnState: Equatable {
 @MainActor
 final class GameViewModel: ObservableObject {
 
+    /// Impostazioni app (lingua / difficoltà), impostate da `GameView.configure`.
+    var appSettings: AppSettings?
+
+    /// Secondi tra una giocata automatica e la successiva (viene da `GameDifficulty` nelle impostazioni).
+    private var autoPlayIntervalSeconds: Double = GameDifficulty.normal.autoPlayIntervalSeconds
+
     // Decks
     @Published var playerDeck: [Card] = []
     @Published var cpuDeck: [Card] = []
@@ -61,12 +67,55 @@ final class GameViewModel: ObservableObject {
     private var autoPlayTask: Task<Void, Never>?
 
     init() {
-        setupGame()
+        // setupGame da `GameView.onAppear` → `configure(settings:)` (lingua + difficoltà)
     }
 
-    
+    /// Allinea lingua, difficoltà e (se serve) riavvia la partita.
+    func configure(settings: AppSettings) {
+        appSettings = settings
+        setupGame(autoPlayInterval: settings.difficulty.autoPlayIntervalSeconds)
+    }
+
+    /// Lingua o difficoltà cambiate in partita: aggiorna testi visibili e intervallo auto-play.
+    func applySettingsUpdate(settings: AppSettings) {
+        appSettings = settings
+        autoPlayIntervalSeconds = settings.difficulty.autoPlayIntervalSeconds
+        startAutoPlay()
+        if let last = tablePile.last {
+            displayMessage = lastPlayedByPlayer
+                ? locFormat(.game_you_threw_fmt, last.value)
+                : locFormat(.game_cpu_threw_fmt, last.value)
+        }
+    }
+
+    private var locLang: AppLanguage {
+        appSettings?.language ?? .english
+    }
+
+    private func loc(_ key: L10nKey) -> String {
+        L10n.string(key, language: locLang)
+    }
+
+    private func locFormat(_ key: L10nKey, _ args: CVarArg...) -> String {
+        switch args.count {
+        case 0: return L10n.string(key, language: locLang)
+        case 1: return L10n.format(key, language: locLang, args[0])
+        case 2: return L10n.format(key, language: locLang, args[0], args[1])
+        default: return L10n.string(key, language: locLang)
+        }
+    }
+
+    private func localizedRuleShort(_ rule: String) -> String {
+        switch rule {
+        case "THE TEN!": return loc(.game_rule_ten_short)
+        case "THE TWIN!": return loc(.game_rule_twin_short)
+        case "THE SANDWICH!": return loc(.game_rule_sandwich_short)
+        default: return rule
+        }
+    }
+
     // MARK: - Setup
-    func setupGame() {
+    func setupGame(autoPlayInterval interval: Double = GameDifficulty.normal.autoPlayIntervalSeconds) {
         autoPlayTask?.cancel()
         gameOver = false
         winner = ""
@@ -85,17 +134,19 @@ final class GameViewModel: ObservableObject {
         visiblePile = []
 
         turnState = .normal(playerTurn: true)
+        autoPlayIntervalSeconds = interval
         startAutoPlay()
     }
 
     // MARK: - Auto Play Loop
-    func startAutoPlay(intervalSeconds: Double = 1.8) {  // Rallentato da 1.3 a 1.8
+    func startAutoPlay() {
         autoPlayTask?.cancel()
 
+        let interval = autoPlayIntervalSeconds
         autoPlayTask = Task { [weak self] in
             guard let self else { return }
 
-            let ns = UInt64(intervalSeconds * 1_000_000_000)
+            let ns = UInt64(interval * 1_000_000_000)
 
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: ns)
@@ -139,8 +190,8 @@ final class GameViewModel: ObservableObject {
         guard let card = drawCard() else { return }
 
         displayMessage = lastPlayedByPlayer
-            ? "YOU THREW \(card.value)"
-            : "CPU THREW \(card.value)"
+            ? locFormat(.game_you_threw_fmt, card.value)
+            : locFormat(.game_cpu_threw_fmt, card.value)
         displayColor = lastPlayedByPlayer ? "green" : "yellow"
 
         tablePile.append(card)
@@ -165,7 +216,7 @@ final class GameViewModel: ObservableObject {
                 return
             }
 
-            // Pattern valido: finestra per CPU slap (300ms di reazione)
+            // Pattern valido: la CPU può battire dopo `cpuSlapReactionSeconds` (dipende dalla difficoltà).
             if self.collectionRule() != nil {
                 self.scheduleCpuSlapCheck(card: card)
                 return
@@ -175,10 +226,13 @@ final class GameViewModel: ObservableObject {
         }
     }
 
-    /// CPU può slapare se rileva un pattern dopo 300ms (tempo di reazione)
+    /// CPU batta la pila dopo un ritardo legato a `GameDifficulty.cpuSlapReactionSeconds`.
     private func scheduleCpuSlapCheck(card: Card) {
         Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 800_000_000)
+            let delay = self.appSettings?.difficulty.cpuSlapReactionSeconds
+                ?? GameDifficulty.normal.cpuSlapReactionSeconds
+            let ns = UInt64(delay * 1_000_000_000)
+            try? await Task.sleep(nanoseconds: ns)
 
             if case .collecting = self.turnState { return }
             if self.gameOver { return }
@@ -248,8 +302,8 @@ final class GameViewModel: ObservableObject {
                     Task { @MainActor in
                         try? await Task.sleep(nanoseconds: 600_000_000)  // attesa prima del banner
                         self.notificationMessage = collector
-                            ? "YOU TAKE THE CARDS"
-                            : "CPU TAKES THE CARDS"
+                            ? self.loc(.game_you_take_cards)
+                            : self.loc(.game_cpu_takes_cards)
 
                         try? await Task.sleep(nanoseconds: 1_200_000_000)  // banner visibile
 
@@ -295,15 +349,6 @@ final class GameViewModel: ObservableObject {
     }
 
     // MARK: - Tap / Slap Rules
-    private func tapRuleDisplay(_ rule: String) -> String {
-        switch rule {
-        case "THE TEN!": return "A TEN"
-        case "THE TWIN!": return "A TWIN"
-        case "THE SANDWICH!": return "A SANDWICH"
-        default: return rule
-        }
-    }
-
     private func collectionRule() -> String? {
         guard tablePile.count >= 2 else { return nil }
 
@@ -342,7 +387,7 @@ final class GameViewModel: ObservableObject {
     private func handlePlayerCollect(message: String) {
         WKInterfaceDevice.current().play(.success)
         autoPlayTask?.cancel()
-        notificationMessage = "YOU CAUGHT\n\(tapRuleDisplay(message))"
+        notificationMessage = locFormat(.game_you_caught_fmt, localizedRuleShort(message))
         turnState = .collecting(collectorIsPlayer: true)
         collectCenter(byPlayer: true)
 
@@ -356,7 +401,7 @@ final class GameViewModel: ObservableObject {
 
     private func handleCpuCollect(message: String) {
         autoPlayTask?.cancel()
-        notificationMessage = "CPU CAUGHT\n\(tapRuleDisplay(message))"
+        notificationMessage = locFormat(.game_cpu_caught_fmt, localizedRuleShort(message))
         turnState = .collecting(collectorIsPlayer: false)
         collectCenter(byPlayer: false)
 
@@ -376,7 +421,7 @@ final class GameViewModel: ObservableObject {
         autoPlayTask?.cancel()
         
         // Mostra messaggio penalty
-        notificationMessage = "PENALTY\nPENALTY!"
+        notificationMessage = loc(.game_penalty_banner)
         
         // Passa in stato collecting per bloccare il gioco
         let previousState = turnState
@@ -407,6 +452,7 @@ final class GameViewModel: ObservableObject {
 
     // MARK: - Pause / Resume
     func pause() {
+        guard !gameOver else { return }
         guard case .paused = turnState else {
             turnState = .paused(previous: turnState)
             return

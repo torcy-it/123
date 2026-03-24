@@ -10,13 +10,14 @@ import SwiftUI
 struct TutorialView: View {
     @StateObject var tutorialVM: TutorialViewModel
     let onFinish: () -> Void
+    @EnvironmentObject private var appSettings: AppSettings
     @Environment(\.watchLayoutMetrics) private var metrics
     @State private var isTutorialPaused = false
 
     // MARK: - Posizione pausa quando c’è la finestrella
     // Valori in “punti” (~@1x); in UI usiamo `metrics.scaled(...)`.
     // Aumenta `leading` → bottone verso destra | `top` → verso il basso.
-    // `offset`: ritocco fine (x+ destra, y+ giù). Ignora safe area in alto (`.ignoresSafeArea(edges: .top)` sotto).
+    // `offset`: ritocco fine (x+ destra, y+ giù).
     private let tutorialOverlayPauseLeadingPoints: CGFloat = 2
     private let tutorialOverlayPauseTopPoints: CGFloat = 2
     private let tutorialOverlayPauseOffsetXPoints: CGFloat = 4
@@ -48,6 +49,7 @@ struct TutorialView: View {
             .padding(.horizontal, metrics.scaled(4))
             .padding(.top, metrics.scaled(0))
             .ignoresSafeArea(edges: .top)
+            .padding(.bottom, metrics.scaled(8))
 
             // Overlay fullscreen con finestrella centrata (come prima); pausa in alto a sinistra fuori dal box
             if tutorialVM.showDarkOverlay {
@@ -81,7 +83,7 @@ struct TutorialView: View {
                     Color.black.opacity(0.55)
                         .ignoresSafeArea()
                     NotificationBannerView(message: tutorialVM.starburstMessage, scale: metrics.scale)
-                        .offset(y: starburstOffsetY(for: tutorialVM.starburstMessage))
+                        .offset(y: starburstOffsetY(for: tutorialVM.starburstMessage) + notificationBannerVerticalBias)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .ignoresSafeArea()
@@ -95,7 +97,11 @@ struct TutorialView: View {
             }
         }
         .onAppear {
+            tutorialVM.bind(settings: appSettings)
             tutorialVM.start()
+        }
+        .onChange(of: appSettings.language) { _ in
+            tutorialVM.bind(settings: appSettings)
         }
     }
 
@@ -118,7 +124,7 @@ struct TutorialView: View {
                 if tutorialVM.isLastStep {
                     // Stesso stile del bottone viola «START GAME» in ContentView + icona casa (menu principale)
                     PixelButton(
-                        text: "MAIN MENU",
+                        text: appSettings.text(.game_main_menu),
                         action: { onFinish() },
                         width: metrics.scaled(190),
                         primaryColor: Color(red: 218/255, green: 0/255, blue: 206/255),
@@ -127,7 +133,7 @@ struct TutorialView: View {
                         textColor: Color.white
                     )
                 } else {
-                    Text("TAP TO CONTINUE")
+                    Text(appSettings.text(.tutorial_tap_to_continue))
                         .font(.custom("PressStart2P-Regular", size: metrics.scaledText(9)))
                         .foregroundColor(.white.opacity(0.6))
                 }
@@ -179,12 +185,12 @@ struct TutorialView: View {
                 .ignoresSafeArea()
             VStack(spacing: metrics.scaled(8)) {
                 Spacer().frame(height: metrics.scaled(2))
-                Text("PAUSED")
+                Text(appSettings.text(.game_paused))
                     .font(.custom("PressStart2P-Regular", size: metrics.scaledText(15)))
                     .foregroundColor(.white)
                 Spacer().frame(height: metrics.scaled(4))
                 PixelButton(
-                    text: "RESUME",
+                    text: appSettings.text(.game_resume),
                     action: { isTutorialPaused = false },
                     width: metrics.scaled(170),
                     height: metrics.scaled(40),
@@ -195,7 +201,7 @@ struct TutorialView: View {
                 )
                 Spacer().frame(height: metrics.scaled(4))
                 PixelButton(
-                    text: "MAIN MENU",
+                    text: appSettings.text(.game_main_menu),
                     action: {
                         isTutorialPaused = false
                         onFinish()
@@ -229,7 +235,7 @@ struct TutorialView: View {
                 pauseToolbarButton { isTutorialPaused = true }
                 Spacer(minLength: 0)
             }
-            Text("CARDS")
+            Text(appSettings.text(.game_cards_title))
                 .font(.custom("PressStart2P-Regular", size: metrics.scaledText(16)))
                 .foregroundColor(.white.opacity(0.7))
         }
@@ -243,7 +249,7 @@ struct TutorialView: View {
         VStack(spacing: 0) {
             HStack(spacing: metrics.scaled(12)) {
                 VStack(spacing: metrics.scaled(2)) {
-                    Text("YOU")
+                    Text(appSettings.text(.game_you))
                         .font(.custom("PressStart2P-Regular", size: metrics.scaledText(10)))
                         .foregroundColor(.white.opacity(0.7))
                     Text("\(tutorialVM.demoYouCount)")
@@ -251,7 +257,7 @@ struct TutorialView: View {
                         .foregroundColor(.white)
                 }
                 VStack(spacing: metrics.scaled(2)) {
-                    Text("CPU")
+                    Text(appSettings.text(.game_cpu))
                         .font(.custom("PressStart2P-Regular", size: metrics.scaledText(10)))
                         .foregroundColor(.white.opacity(0.7))
                     Text("\(tutorialVM.demoCpuCount)")
@@ -274,8 +280,10 @@ struct TutorialView: View {
                     ? Color(red: 218/255, green: 0/255, blue: 206/255)
                     : Color(red: 255/255, green: 200/255, blue: 0/255)
             )
+            .multilineTextAlignment(.center)
     }
 
+    /// Stesso schema di `GameView`: ventaglio con `scaleEffect`, area che riempie il resto dello schermo.
     private var demoCardArea: some View {
         ZStack(alignment: .top) {
             if !tutorialVM.demoVisibleCards.isEmpty {
@@ -297,9 +305,10 @@ struct TutorialView: View {
                 }
             } else if let whoStarts = tutorialVM.demoWhoStartsWhenEmpty {
                 VStack(spacing: metrics.scaled(15)) {
-                    Text(whoStarts ? "YOU START" : "CPU START")
+                    Text(whoStarts ? appSettings.text(.game_you_start) : appSettings.text(.game_cpu_start))
                         .font(.custom("PressStart2P-Regular", size: metrics.scaledText(12)))
                         .foregroundColor(.white.opacity(0.5))
+                        .multilineTextAlignment(.center)
                 }
                 .frame(height: metrics.scaled(100))
             }
@@ -309,10 +318,14 @@ struct TutorialView: View {
         .padding(.bottom, metrics.scaled(8))
     }
 
+    /// Allineato a `GameView`: il banner con testo ridimensionato tende a sembrare più in alto.
+    private var notificationBannerVerticalBias: CGFloat { metrics.scaled(14) }
+
     private func starburstOffsetY(for message: String) -> CGFloat {
-        if message.contains("CAUGHT") { return metrics.scaled(40) }   // A TEN, A TWIN, A SANDWICH
-        if message.contains("PENALTY") { return metrics.scaled(-5) }
-        if message.contains("TAKE") { return metrics.scaled(-5) }     // YOU/CPU TAKE THE CARDS
+        let u = message.uppercased()
+        if u.contains("CAUGHT") || u.contains("CATTUR") { return metrics.scaled(40) }
+        if u.contains("PENALTY") || u.contains("PENAL") { return metrics.scaled(-5) }
+        if u.contains("TAKE") || u.contains("PREND") { return metrics.scaled(-5) }
         return metrics.scaled(0)
     }
 
@@ -346,6 +359,7 @@ struct TutorialView: View {
     GeometryReader { geo in
         TutorialView(tutorialVM: TutorialViewModel(), onFinish: {})
             .environment(\.watchLayoutMetrics, WatchLayoutMetrics.from(proxy: geo))
+            .environmentObject(AppSettings.preview)
     }
     .previewDevice("Apple Watch Series 10 (41mm)")
 }

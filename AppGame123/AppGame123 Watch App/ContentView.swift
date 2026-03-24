@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     let onNavigate: (AppRoute) -> Void
+    @EnvironmentObject private var appSettings: AppSettings
     @Environment(\.watchLayoutMetrics) private var metrics
 
     private let menuCardColor = Color(red: 0/255, green: 255/255, blue: 120/255)
@@ -38,7 +39,7 @@ struct ContentView: View {
                             .zIndex(0)
 
                         PixelButton(
-                            text: "PLAY",
+                            text: appSettings.text(.menu_play),
                             action: {
                                 onNavigate(.game)
                             },
@@ -56,7 +57,7 @@ struct ContentView: View {
 
                     HStack(spacing: metrics.scaled(8)) {
                         PixelButton(
-                            text: "TUTORIAL",
+                            text: appSettings.text(.menu_tutorial),
                             action: {
                                 onNavigate(.tutorial)
                             },
@@ -194,6 +195,13 @@ struct GameCard: View {
     }
 }
 
-#Preview {
-    RootView()
+
+
+#Preview("Rootview") {
+    GeometryReader { geo in
+        RootView()
+            .environment(\.watchLayoutMetrics, WatchLayoutMetrics.from(proxy: geo))
+            .environmentObject(AppSettings.preview)
+    }
+    .previewDevice("Apple Watch Series 10 (41mm)")
 }
